@@ -1,5 +1,10 @@
 import { build } from "esbuild";
-import { globSync } from "node:fs";
+import { cpSync, globSync, rmSync } from "node:fs";
+
+// Test packages live outside node_modules (which git ignores) and are copied into the fixture.
+const modules = "test/fixtures/vite-project/node_modules";
+rmSync(modules, { recursive: true, force: true });
+cpSync("test/fixtures/packages", modules, { recursive: true });
 
 await build({
   entryPoints: globSync("test/integration/*.test.ts"),

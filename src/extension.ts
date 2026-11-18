@@ -4,6 +4,7 @@ import { ModuleDefinitionProvider } from "./vscode/definition.ts";
 import { ModuleHoverProvider } from "./vscode/hover.ts";
 import { ModuleFiles } from "./vscode/module-files.ts";
 import { DocumentLoader, syncModuleFiles } from "./vscode/module-sync.ts";
+import { SourceStores } from "./vscode/sources.ts";
 import { disposeTiming } from "./vscode/timing.ts";
 
 /** Same selector shape as the built-in TypeScript support, so our results come first (SPEC §10). */
@@ -17,14 +18,18 @@ const SCRIPT_LANGUAGES: vscode.DocumentFilter[] = [
 /** Returned from `activate` for integration tests; not a public API. */
 export interface TestApi {
   readonly moduleFiles: ModuleFiles;
+  readonly sources: SourceStores;
 }
 
 export function activate(context: vscode.ExtensionContext): TestApi {
   const loader = new DocumentLoader();
   const files = new ModuleFiles(loader);
+  const sync = syncModuleFiles(files, loader); // registers first: it tracks open documents
+  const sources = new SourceStores(loader);
   context.subscriptions.push(
     files,
-    syncModuleFiles(files, loader),
+    sync,
+    sources,
     vscode.languages.registerDefinitionProvider(
       SCRIPT_LANGUAGES,
       new ModuleDefinitionProvider(files),
@@ -38,7 +43,7 @@ export function activate(context: vscode.ExtensionContext): TestApi {
     vscode.workspace.onDidCloseTextDocument((d) => files.imports.delete(d.uri.toString())),
     { dispose: disposeTiming },
   );
-  return { moduleFiles: files };
+  return { moduleFiles: files, sources };
 }
 
 export function deactivate(): void {}

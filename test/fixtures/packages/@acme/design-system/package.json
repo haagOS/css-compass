@@ -1,0 +1,10 @@
+{
+  "name": "@acme/design-system",
+  "version": "1.0.0",
+  "exports": {
+    "./style.css": {
+      "types": "./lib/style.css.d.ts",
+      "default": "./lib/style.css"
+    }
+  }
+}

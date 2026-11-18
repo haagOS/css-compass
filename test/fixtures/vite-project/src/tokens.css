@@ -1,0 +1,4 @@
+:root {
+  --app-gap: 4px;
+  --app-accent: var(--ds-accent);
+}

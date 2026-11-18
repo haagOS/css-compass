@@ -39,6 +39,14 @@
     "configuration": {
       "title": "CSS Compass",
       "properties": {
+        "cssCompass.sources": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "scope": "resource",
+          "markdownDescription": "CSS files whose custom properties and global classes are indexed: globs relative to the workspace folder (`src/**/*.css`) or package specifiers (`@acme/design-system/style.css`). When not set: `src/**/*.css` plus `cssVariables.lookupFiles`."
+        },
         "cssCompass.localsConvention": {
           "type": "string",
           "enum": [

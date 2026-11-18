@@ -1,0 +1,25 @@
+@layer ds.base, ds.utilities;
+
+:root {
+  --ds-blue-0: #1f4e8c;
+  --ds-blue-0-rgb: 31, 78, 140;
+  --ds-accent: var(--ds-blue-0);
+  --ds-grey-8: #333333;
+  --ds-shadow: 0 2px 8px 0 rgba(var(--ds-blue-0-rgb), 0.25);
+}
+
+.theme-contrast {
+  --ds-accent: #000000;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ds-grey-8: #eeeeee;
+  }
+}
+
+@layer ds.utilities {
+  .text-sm {
+    font-size: 0.875rem;
+  }
+}
