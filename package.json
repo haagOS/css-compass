@@ -18,11 +18,15 @@
     "test": "vitest run",
     "build": "node scripts/build.ts",
     "check:size": "node scripts/check-size.ts",
-    "package": "pnpm build && pnpm check:size && vsce package --no-dependencies --skip-license --allow-missing-repository"
+    "package": "pnpm build && pnpm check:size && vsce package --no-dependencies --skip-license --allow-missing-repository",
+    "test:integration": "node scripts/build-tests.ts && vscode-test"
   },
   "devDependencies": {
+    "@types/mocha": "^10.0.10",
     "@types/node": "^22.20.5",
     "@types/vscode": "1.100.0",
+    "@vscode/test-cli": "^0.0.15",
+    "@vscode/test-electron": "^3.1.0",
     "@vscode/vsce": "^4.1.1",
     "esbuild": "^0.28.2",
     "oxfmt": "^0.79.0",

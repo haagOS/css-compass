@@ -11,3 +11,17 @@ Status: early development. See `SPEC.md` in the repository.
 pnpm install
 pnpm typecheck && pnpm lint && pnpm format:check && pnpm test
 ```
+
+Integration tests run in a downloaded VS Code (pinned in `.vscode-test.mjs`). Set
+`VSCODE_TEST_VERSION` to run them on another version.
+
+```bash
+pnpm test:integration
+```
+
+```bash
+pnpm package
+```
+
+`pnpm package` builds `css-compass-<version>.vsix`. Install it with
+`code --install-extension css-compass-<version>.vsix`.
