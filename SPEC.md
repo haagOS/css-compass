@@ -349,13 +349,17 @@ the repo.
 
 - [ ] Ctrl+Click on `styles` in a component opens its `.module.css` file.
 - [ ] Ctrl+Click on `styles.<class>` jumps straight to the rule.
-- [ ] `styles.` lists only that file's classes, with previews.
+- [x] `styles.` lists only that file's classes, with previews.
 - [ ] In a component, hovering a utility class in `className="…"` shows the rule from the
       package stylesheet, with its `@layer`. Ctrl+Click opens that line in `node_modules`.
-- [ ] In a `.module.css` file, `var(--` completes the package's tokens with swatches.
-- [ ] Hovering a themed token shows the `:root` / theme definitions and the resolved colours.
-- [ ] Hovering `"var(--ds-grey-8)"` in a TSX `style` prop works.
+- [x] In a `.module.css` file, `var(--` completes the package's tokens with swatches.
+- [x] Hovering a themed token shows the `:root` / theme definitions and the resolved colours.
+- [x] Hovering `"var(--ds-grey-8)"` in a TSX `style` prop works.
 - [ ] All §8 budgets are met. The numbers are recorded in `docs/benchmarks.md`.
+
+M5 ran these checks through VS Code's provider commands in a private test run (results in
+`docs/benchmarks.md`). Ctrl+Click (which result VS Code opens) and the manual budgets are checked
+by hand, so those boxes stay open until then.
 
 ## 12. Milestones
 

@@ -76,3 +76,23 @@ Module imports, 390 member and index usages), every module cached. Pure core.
 |---|---|---|---|
 | unknown module classes: full check of the file | 0.161 ms | 0.175 ms | ≤ 1 ms |
 | unknown global classes: full check of the M4 class component (496 names, 400-class index) | 2.20 ms | 2.94 ms | ≤ 5 ms |
+
+### Acceptance run on the reference project — 2026-11-18
+
+VS Code 1.146.0 test instance, `--disable-extensions`, no `cssCompass.*` settings (the
+`cssVariables.lookupFiles` fallback is used: `src/**/*.css` plus one package stylesheet given as
+a plain `node_modules/…` path). 63 project CSS files, 169 package tokens, 74 components with CSS
+Module imports. Times are round trips through VS Code's provider commands, so they include
+VS Code itself and, for TS/TSX, the TypeScript server's own answer.
+
+| Check | Result |
+|---|---|
+| Cold first request: building the source index | 172–260 ms (was ~500 ms before M5's fix) — **over the 20 ms budget** |
+| of which VS Code's file search for `src/**/*.css` | ~135 ms per search (uncached) |
+| Warm hover on a utility class (incl. TypeScript) | 30–140 ms |
+| Unknown module class warnings, 74 components | 0 |
+| Unknown global class warnings (opt-in), 167 files | 0 (1 before the comparison fix) |
+| Activation time, heap | manual, not yet measured |
+
+The cold index build is dominated by `vscode.workspace.findFiles`. M5 skips it for plain paths
+and runs searches in parallel; the rest of the build (loading and scanning 64 files) is ~40 ms.
