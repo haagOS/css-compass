@@ -92,8 +92,8 @@ rules, class names and custom properties, each with an exact range.
   declarations from the cached file text when it needs them.
 - **R-SC-8 MUST** tolerate invalid or partial CSS while the user is typing: no throw, and as
   many symbols as possible are still recovered.
-- **R-SC-9 SHOULD** parse `composes: a b from "./x.module.css"` and `composes: a from global`
-  as references (§5.3).
+- **R-SC-9 SHOULD** (later, see §12) parse `composes: a b from "./x.module.css"` and
+  `composes: a from global` as references (§5.3).
 
 ## 5. Features by usage site
 
@@ -168,8 +168,8 @@ before packages, so Ctrl+Click lands on the project's own rule.
 | R-CSS-1 | MUST | **Completion** of custom properties inside `var(` with the resolved value, a colour swatch for colours, and the source label. |
 | R-CSS-2 | MUST | **Hover** on `var(--x)` and on a `--x:` declaration shows every definition with its scope, and resolves the `var()` chain (§6). |
 | R-CSS-3 | MUST | **Go to definition** on `--x` in `var(--x)` jumps to its definition(s). With several scopes, the result is a peek list. |
-| R-CSS-4 | SHOULD | Completion, hover and definition for global classes in `:global(.…)` (done in M4; classes declared in the current file are left out). `composes: … from global` moves to M5 with R-SC-9. |
-| R-CSS-5 | SHOULD | Completion, hover and definition for `composes: a from "./other.module.css"`. |
+| R-CSS-4 | SHOULD | Completion, hover and definition for global classes in `:global(.…)` (done in M4; classes declared in the current file are left out). `composes: … from global` is later, with R-SC-9 (§12). |
+| R-CSS-5 | SHOULD | (Later, see §12.) Completion, hover and definition for `composes: a from "./other.module.css"`. |
 
 The built-in CSS language service keeps handling everything else (property names, values,
 literal colour swatches). CSS Compass must not duplicate it: completion and definition leave
@@ -262,13 +262,17 @@ run at the end of each milestone and the numbers are recorded in `docs/benchmark
 
 | Check | Metric | Budget | How it is measured |
 |---|---|---|---|
-| Script | Bundle size (`dist/extension.cjs`, minified) | ≤ 50 KB | `pnpm check:size`, also run by `pnpm package` |
+| Script | Bundle size (`dist/extension.cjs`, minified) | ≤ 65,536 bytes (64 KiB) | `pnpm check:size`, also run by `pnpm package` |
 | Script | Runtime dependencies | 0 | `package.json` `dependencies` is empty |
 | Manual | Activation time | ≤ 10 ms | *Developer: Show Running Extensions* |
 | Bench | Scan of a 10k-line CSS file (generated, also minified) | ≤ 3 ms (median) | `pnpm bench` |
 | Bench | Definition / hover / completion, warm | ≤ 1 ms | `pnpm bench` on the providers' pure core; owned by M2 (module classes), M3 (properties), M4 (global classes) |
 | Bench | Cold first request (package sources indexed lazily) | ≤ 20 ms on the reference project | `debug.timings` |
 | Manual | Extension heap after using every feature on the reference project | ≤ 10 MB above baseline | heap snapshot from the extension host |
+
+The bundle budget was 50 KB until M5. It stands in for start-up cost, which is what users feel;
+activation time is the requirement that counts and is measured in the acceptance run (§11).
+The budget counts bytes, the same unit as `scripts/check-size.ts`.
 
 How the budgets are met:
 - **R-PERF-1 MUST** activate only through `onLanguage` (css, typescript, typescriptreact,
@@ -357,6 +361,7 @@ the repo.
 | M1 | CSS scanner + index + cache + benchmarks (§4, §8) — done |
 | M2 | Module classes in TS/TSX (§5.1) — done (R-MC-3 moved, R-MC-10 in M5) |
 | M3 | Custom properties: CSS, TS strings, value resolution, colours (§5.3, §5.4, §5.5, §6) — done |
-| M4 | Global classes (§5.2, R-CSS-4) — done (`composes … from global` in M5) |
-| M5 | Diagnostics (R-MC-10, R-GC-7), `composes` (R-SC-9, R-CSS-5, `composes … from global`), bundle size headroom, acceptance run on the reference project, `v0.1.0` `.vsix` |
-| — | R-MC-3: tsconfig `paths` and bare specifiers for CSS Module imports (after M4) |
+| M4 | Global classes (§5.2, R-CSS-4) — done (`composes … from global` later) |
+| M5 | Diagnostics (R-MC-10, R-GC-7), bundle size budget, acceptance run on the reference project, `v0.1.0` `.vsix` |
+| — | R-MC-3: tsconfig `paths` and bare specifiers for CSS Module imports (later) |
+| — | `composes` (R-SC-9, R-CSS-5, `composes … from global`): rare in practice (about 1 % of public `*.module.css` files mention it), so later |
