@@ -102,7 +102,7 @@ Features:
 |---|---|---|
 | R-MC-4 | MUST | **Go to definition** on the binding `styles` opens the CSS file (line 1). |
 | R-MC-5 | MUST | **Go to definition** on `styles.shell` / `styles["shell"]` jumps to the exact class name in its rule. Multiple rules for the same class are all returned. |
-| R-MC-6 | MUST | Ctrl+Click on `styles.shell` lands **directly** on the rule, with no peek list caused by TypeScript's own result for `vite/client`'s `declare module "*.module.css"` (see §10, risk 1). |
+| R-MC-6 | MUST | Ctrl+Click on `styles.shell` lands **directly** on the rule, with no peek list caused by TypeScript's own result for `vite/client`'s `declare module "*.module.css"` (see §10, risk 1). Achieved through R-CFG-5. |
 | R-MC-7 | MUST | **Completion** after `styles.` and inside `styles["…"]` lists only that file's local classes. Each entry shows a short preview of the declarations. Names with a `-` are inserted as `["a-b"]` if `localsConvention` doesn't convert them. |
 | R-MC-8 | MUST | **Hover** on `styles.shell` shows the rule(s) as a CSS code block, plus `file:line` and the at-rule context. |
 | R-MC-9 | MUST | `localsConvention` (§7) maps CSS names to JS names the same way as Vite and css-loader: `asIs`, `camelCase`, `camelCaseOnly`, `dashes`, `dashesOnly`. |
@@ -186,6 +186,13 @@ How sources work:
   custom properties and `:global` classes are global, and their local classes are **not**.
 - **R-CFG-4 MUST** apply setting changes without a reload.
 
+Contributed editor default:
+- **R-CFG-5 MUST** contribute `configurationDefaults` that set
+  `editor.gotoLocation.multipleDefinitions` to `"goto"` for `[typescript]`,
+  `[typescriptreact]`, `[javascript]` and `[javascriptreact]` (decision for §10, risk 1). The
+  README states the side effect (any Go to Definition with several results in those languages,
+  e.g. overloads, jumps to the first instead of opening a peek list) and how to override it.
+
 ## 8. Performance and footprint
 
 These budgets are requirements. Each has a way of measuring it, and the first column says
@@ -193,7 +200,7 @@ where it is checked.
 
 | Check | Metric | Budget | How it is measured |
 |---|---|---|---|
-| CI | Bundle size (`dist/extension.js`, minified) | ≤ 50 KB | size check in the build |
+| CI | Bundle size (`dist/extension.cjs`, minified) | ≤ 50 KB | `pnpm check:size`, also run by `pnpm package` |
 | CI | Runtime dependencies | 0 | `package.json` `dependencies` is empty |
 | Manual | Activation time | ≤ 10 ms | *Developer: Show Running Extensions* |
 | Bench | Scan of a 10k-line CSS file | ≤ 3 ms (median) | `vitest bench` |
@@ -216,14 +223,20 @@ How the budgets are met:
 
 ## 9. Tooling, build and install
 
-- TypeScript (strict), target ES2022, one file bundled by **esbuild** (CJS, `vscode`
-  external).
-- **pnpm**, **Vitest** (unit + bench), **oxlint** + **oxfmt**.
-- One integration smoke test using `@vscode/test-electron`. It opens a fixture workspace and
-  runs definition, hover and completion once each.
-- `engines.vscode`: a recent stable (≥ 1.100).
-- Install: `pnpm package` produces `css-compass-<version>.vsix`, then
-  `code --install-extension css-compass-<version>.vsix`.
+- TypeScript (strict), target ES2022, one file `dist/extension.cjs` bundled by **esbuild**
+  (CJS, `vscode` external). The package is `type: module`, hence the `.cjs` extension.
+- **pnpm**, **Vitest** (unit + bench), **oxlint** + **oxfmt** (Markdown is not formatted).
+  Build scripts are TypeScript run directly by Node (≥ 22.18).
+- Integration tests use `@vscode/test-cli` on `@vscode/test-electron`, in a downloaded VS Code
+  **pinned** in `.vscode-test.mjs` (1.146.0; `VSCODE_TEST_VERSION` overrides it). They open a
+  fixture workspace and wait for the *semantic* TypeScript server: the syntax-only server
+  answers first and resolves imports to the import line.
+- `engines.vscode`: `^1.100.0`. The integration tests pass on 1.100.0 as well.
+- Install: `pnpm package` builds and size-checks, then runs
+  `vsce package --no-dependencies --skip-license --allow-missing-repository` and produces
+  `css-compass-<version>.vsix`. Install it with
+  `code --install-extension css-compass-<version>.vsix`. The license and repository URL are
+  decided before any publishing.
 
 **Fixtures:** tests use **synthetic** fixtures that copy the structure of real package
 stylesheets: tokens in `:root` plus theme classes, `var()` chains, and utility classes in an
@@ -232,17 +245,23 @@ project in §11 is used only for manual acceptance.
 
 ## 10. Risks and open questions
 
-1. **Definition merging with TypeScript (R-MC-6).** VS Code combines definitions from every
-   provider. With `vite/client`'s `declare module "*.module.css"`, TypeScript may return its
-   own location for `styles.shell`, and then Ctrl+Click shows a peek list instead of jumping.
-   **Milestone M0 is a spike that measures this.** Possible fixes, in order of preference:
-   - TS returns nothing for index-signature access → no action needed
-   - document `editor.gotoLocation.multipleDefinitions: "goto"` and make sure our result is
-     first
-   - an optional, small TS server plugin (must still work, or degrade gracefully, under the
-     native TS 7 compiler)
-2. **Order of definitions in the peek list.** VS Code decides it. Our results can't be
-   forced to come first.
+1. **Definition merging with TypeScript (R-MC-4, R-MC-6) — measured in M0, resolved.**
+   VS Code combines definitions from every provider. With a Vite-style
+   `declare module "*.module.css"`, the bundled TypeScript (5.8.3 in VS Code 1.100, 6.0.3 in
+   1.146) answers `styles` with the ambient `const classes` and `styles.shell` with the
+   `[key: string]` index signature. It doesn't answer `styles["shell"]`. With the default
+   `multipleDefinitions: "peek"`, Ctrl+Click therefore opens a peek list.
+   **Decision:** contribute `"goto"` as the default for TS/JS languages (R-CFG-5). Rejected:
+   a TS server plugin (second module, unclear support in the native TS 7 compiler), a
+   README-only setting (R-MC-6 would become SHOULD), accepting the peek list.
+   `test/integration/definition-merging.test.ts` pins both the TypeScript behaviour and the
+   jump.
+2. **Order of definitions — verified in M0.** VS Code sorts providers by selector score, then
+   puts non-built-in providers before built-in ones, then newest first. In `goto` mode
+   Ctrl+Click opens the first provider's first result. A provider registered with
+   `{ language, scheme: "file" }` comes first (the selector the spike test uses). Tested on VS Code 1.100.0 and
+   1.146.0. **Limit:** with a TypeScript extension that isn't built-in (TS Nightly, the native
+   TS preview), the built-in rule no longer applies and the order isn't guaranteed.
 3. **Class contexts without an AST.** A local scan can misread unusual code (a `className`
    built across several lines from helper variables). That's acceptable: missing a context is
    fine, a wrong feature in a non-class string is not.
@@ -271,7 +290,7 @@ the repo.
 
 | # | Content |
 |---|---|
-| M0 | Scaffold (build, test, package, install) + **spike for risk 1** |
+| M0 | Scaffold (build, test, package, install) + **spike for risk 1** — done |
 | M1 | CSS scanner + index + cache + benchmarks (§4, §8) |
 | M2 | Module classes in TS/TSX (§5.1) |
 | M3 | Custom properties: CSS, TS strings, value resolution, colours (§5.3, §5.4, §5.5, §6) |
