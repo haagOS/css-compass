@@ -81,3 +81,7 @@ pnpm package
 
 `pnpm package` builds `css-compass-<version>.vsix`. Install it with
 `code --install-extension css-compass-<version>.vsix`.
+
+## License
+
+MIT, see `LICENSE`.

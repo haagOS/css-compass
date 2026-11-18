@@ -7,6 +7,11 @@
   "categories": [
     "Programming Languages"
   ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/haagOS/css-compass.git"
+  },
   "publisher": "local",
   "type": "module",
   "main": "./dist/extension.cjs",
@@ -18,7 +23,7 @@
     "test": "vitest run",
     "build": "node scripts/build.ts",
     "check:size": "node scripts/check-size.ts",
-    "package": "pnpm build && pnpm check:size && vsce package --no-dependencies --skip-license --allow-missing-repository",
+    "package": "pnpm build && pnpm check:size && vsce package --no-dependencies",
     "test:integration": "pnpm build && node scripts/build-tests.ts && vscode-test",
     "bench": "node scripts/bench.ts"
   },

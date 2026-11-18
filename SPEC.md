@@ -309,10 +309,8 @@ How the budgets are met:
   answers first and resolves imports to the import line.
 - `engines.vscode`: `^1.100.0`. The integration tests pass on 1.100.0 as well.
 - Install: `pnpm package` builds and size-checks, then runs
-  `vsce package --no-dependencies --skip-license --allow-missing-repository` and produces
-  `css-compass-<version>.vsix`. Install it with
-  `code --install-extension css-compass-<version>.vsix`. The license and repository URL are
-  decided before any publishing.
+  `vsce package --no-dependencies` and produces `css-compass-<version>.vsix`. Install it with
+  `code --install-extension css-compass-<version>.vsix`. License: MIT (`LICENSE`).
 
 **Fixtures:** tests use **synthetic** fixtures that copy the structure of real package
 stylesheets: tokens in `:root` plus theme classes, `var()` chains, and utility classes in an
