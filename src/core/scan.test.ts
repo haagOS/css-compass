@@ -170,8 +170,17 @@ describe("custom properties", () => {
 .x { .dark & { --b: 2; } @media (y) { --c: 3; } }`;
     expect(plain(css).properties.map((p) => [p.name, p.scope, p.atRules])).toEqual([
       ["--a", ":root", ["@media (prefers-color-scheme: dark)"]],
-      ["--b", ".dark &", []],
+      ["--b", ".dark .x", []],
       ["--c", ".x", ["@media (y)"]],
+    ]);
+  });
+
+  test("nested scopes resolve `&` against the parent, lists are combined", () => {
+    const css = ":root { &.dark { --a: 1; } } .a, .b { &:hover, .c & { --b: 2; } .d { --c: 3; } }";
+    expect(plain(css).properties.map((p) => [p.name, p.scopeParts])).toEqual([
+      ["--a", [":root.dark"]],
+      ["--b", [".a:hover", ".c .a", ".b:hover", ".c .b"]],
+      ["--c", [".a .d", ".b .d"]],
     ]);
   });
 

@@ -36,7 +36,8 @@ export interface CssProperty {
   readonly value: string;
   readonly valueStart: number;
   readonly valueEnd: number;
-  /** Selector of the nearest enclosing style rule, whitespace-normalized; "" if none. */
+  /** Selector of the nearest enclosing style rule with nesting resolved (`&` replaced by the
+   * parent selector), whitespace-normalized; "" if none. */
   readonly scope: string;
   /** `scope` split at top-level commas. */
   readonly scopeParts: readonly string[];
@@ -72,6 +73,7 @@ interface Frame {
 type Mutable<T> = { -readonly [K in keyof T]: T[K] };
 
 const NO_AT_RULES: readonly string[] = [];
+const MAX_NESTED_SCOPES = 16;
 const ROOT: Frame = { kind: FRAME_AT_RULE, rule: -1, styleRule: -1, atRules: NO_AT_RULES };
 
 const C = {
@@ -354,8 +356,16 @@ class Scanner {
     const known = this.scopes.get(rule);
     if (known) return known;
     const r = this.rules[rule];
-    const scope = r ? normalize(this.text.slice(r.selectorStart, r.selectorEnd)) : "";
-    const result = { scope, parts: scope === "" ? [] : splitTopLevel(scope) };
+    const own = r ? splitTopLevel(normalize(this.text.slice(r.selectorStart, r.selectorEnd))) : [];
+    // CSS nesting: `&` stands for the parent selector; without `&` the rule is a descendant.
+    const parentParts = r && r.parent >= 0 ? this.scopeOf(r.parent).parts : [];
+    const parts =
+      parentParts.length === 0
+        ? own
+        : parentParts
+            .flatMap((p) => own.map((c) => (c.includes("&") ? c.replaceAll("&", p) : `${p} ${c}`)))
+            .slice(0, MAX_NESTED_SCOPES);
+    const result = { scope: parts.join(", "), parts };
     this.scopes.set(rule, result);
     return result;
   }
