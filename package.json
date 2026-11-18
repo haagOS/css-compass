@@ -1,7 +1,7 @@
 {
   "name": "css-compass",
   "displayName": "CSS Compass",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "private": true,
   "description": "Go to definition, hover and completion for CSS Modules, global classes and custom properties.",
   "categories": [

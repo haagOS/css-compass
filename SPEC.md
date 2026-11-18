@@ -1,6 +1,6 @@
 # CSS Compass — Specification
 
-> Status: draft v0.1 · 2026-11-18
+> Status: v0.1.0 · 2026-11-18
 
 CSS Compass is a lean VS Code extension that lets you navigate CSS from where it is used. It
 covers CSS Modules class names, global classes such as utility classes, and CSS custom
@@ -370,6 +370,6 @@ by hand, so those boxes stay open until then.
 | M2 | Module classes in TS/TSX (§5.1) — done (R-MC-3 moved, R-MC-10 in M5) |
 | M3 | Custom properties: CSS, TS strings, value resolution, colours (§5.3, §5.4, §5.5, §6) — done |
 | M4 | Global classes (§5.2, R-CSS-4) — done (`composes … from global` later) |
-| M5 | Diagnostics (R-MC-10, R-GC-7), bundle size budget, acceptance run on the reference project, `v0.1.0` `.vsix` |
+| M5 | Diagnostics (R-MC-10, R-GC-7), bundle size budget, acceptance run on the reference project, `v0.1.0` `.vsix` — done (Ctrl+Click, activation time and heap still to be checked by hand; cold first request over budget, see `docs/benchmarks.md`) |
 | — | R-MC-3: tsconfig `paths` and bare specifiers for CSS Module imports (later) |
 | — | `composes` (R-SC-9, R-CSS-5, `composes … from global`): rare in practice (about 1 % of public `*.module.css` files mention it), so later |
