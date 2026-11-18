@@ -9,7 +9,9 @@ import {
   fixture,
   isFile,
   names,
+  NO_FOCUS,
   offsetOf,
+  revealDefinitionAt,
   waitFor,
 } from "./helpers.ts";
 
@@ -64,10 +66,10 @@ suite("global classes in TS", () => {
 
   test("completion inside a multi-line clsx call, with a lazy preview", async () => {
     const items = await complete(doc, offsetOf(doc, '"app-"', 5), 50);
-    const item = items.find((i) => labelOf(i) === "app-shell");
+    const item = items.find((i) => labelOf(i) === "hidden");
     assert.ok(item);
     const docs = item.documentation;
-    assert.match(typeof docs === "string" ? docs : (docs?.value ?? ""), /display: grid/);
+    assert.match(typeof docs === "string" ? docs : (docs?.value ?? ""), /display: none/);
   });
 
   test("hover shows the rules with at-rules, workspace file first", async () => {
@@ -92,11 +94,11 @@ suite("global classes in TS", () => {
     }
   });
 
-  test("Ctrl+Click lands on the workspace definition first", async () => {
-    const editor = await vscode.window.showTextDocument(doc);
-    const position = doc.positionAt(offsetOf(doc, '"text-sm app-shell"', 3));
-    editor.selection = new vscode.Selection(position, position);
-    await vscode.commands.executeCommand("editor.action.revealDefinition");
+  test("Ctrl+Click lands on the workspace definition first", async function () {
+    if (!(await revealDefinitionAt(doc, offsetOf(doc, '"text-sm app-shell"', 3)))) {
+      console.warn(NO_FOCUS);
+      this.skip();
+    }
     const landed = await waitFor("Go to Definition to leave classes.tsx", () => {
       const active = vscode.window.activeTextEditor;
       return active && active.document !== doc ? active : undefined;

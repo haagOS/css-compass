@@ -11,7 +11,9 @@ import {
   fixture,
   isFile,
   names,
+  NO_FOCUS,
   offsetOf,
+  revealDefinitionAt,
   waitFor,
   waitForTypeScript,
 } from "./helpers.ts";
@@ -62,15 +64,15 @@ suite("definition merging with TypeScript", () => {
     ["styles.shell", "styles.shell", 8, shellStart],
     ["styles", "styles.shell", 1, new vscode.Position(0, 0)],
   ] as const) {
-    test(`Ctrl+Click lands on our result for \`${label}\``, async () => {
+    test(`Ctrl+Click lands on our result for \`${label}\``, async function () {
       // Only meaningful while TypeScript competes with a result of its own.
       const found = await definitionsAt(doc, offsetOf(doc, needle, delta));
       assert.ok(found.length >= 2, `expected a competing result in [${names(found)}]`);
 
-      const editor = await vscode.window.showTextDocument(doc);
-      const position = doc.positionAt(offsetOf(doc, needle, delta));
-      editor.selection = new vscode.Selection(position, position);
-      await vscode.commands.executeCommand("editor.action.revealDefinition");
+      if (!(await revealDefinitionAt(doc, offsetOf(doc, needle, delta)))) {
+        console.warn(NO_FOCUS);
+        this.skip();
+      }
       const landed = await waitFor("Go to Definition to leave app.tsx", () => {
         const active = vscode.window.activeTextEditor;
         return active && active.document.uri.toString() !== appUri.toString() ? active : undefined;

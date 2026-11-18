@@ -2,7 +2,16 @@
 // Custom properties in CSS files (SPEC §5.3 R-CSS-1..3).
 import * as assert from "node:assert/strict";
 import * as vscode from "vscode";
-import { activateExtension, definitionsAt, fixture, isFile, offsetOf, waitFor } from "./helpers.ts";
+import {
+  activateExtension,
+  definitionsAt,
+  fixture,
+  isFile,
+  offsetOf,
+  NO_FOCUS,
+  revealDefinitionAt,
+  waitFor,
+} from "./helpers.ts";
 
 type Item = vscode.CompletionItem;
 const label = (item: Item) => (typeof item.label === "string" ? item.label : item.label.label);
@@ -88,11 +97,11 @@ suite("custom properties in CSS", () => {
     assert.equal(inPackage.length, 2);
   });
 
-  test("Ctrl+Click on a token of this file jumps without a peek list", async () => {
-    const editor = await vscode.window.showTextDocument(doc);
-    const position = doc.positionAt(offsetOf(doc, "var(--local-only)", 8));
-    editor.selection = new vscode.Selection(position, position);
-    await vscode.commands.executeCommand("editor.action.revealDefinition");
+  test("Ctrl+Click on a token of this file jumps without a peek list", async function () {
+    if (!(await revealDefinitionAt(doc, offsetOf(doc, "var(--local-only)", 8)))) {
+      console.warn(NO_FOCUS);
+      this.skip();
+    }
     await waitFor(
       "the jump to the declaration",
       () => (vscode.window.activeTextEditor?.selection.active.line === 1 ? true : undefined),

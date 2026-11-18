@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { PropertyColorProvider } from "./vscode/colors.ts";
+import { CssGlobalClassProvider } from "./vscode/css-global-classes.ts";
 import { ModuleCompletionProvider } from "./vscode/completion.ts";
 import { CssPropertyProvider } from "./vscode/css-providers.ts";
 import { ModuleDefinitionProvider } from "./vscode/definition.ts";
@@ -37,6 +38,7 @@ export function activate(context: vscode.ExtensionContext): TestApi {
   const css = new CssPropertyProvider(properties);
   const tsProperties = new TsPropertyProvider(properties);
   const globalClasses = new GlobalClassProvider(sources, files);
+  const cssGlobalClasses = new CssGlobalClassProvider(sources);
   context.subscriptions.push(
     files,
     sync,
@@ -57,6 +59,13 @@ export function activate(context: vscode.ExtensionContext): TestApi {
       ...CssPropertyProvider.triggerCharacters,
     ),
     vscode.languages.registerHoverProvider(CSS, css),
+    vscode.languages.registerCompletionItemProvider(
+      CSS,
+      cssGlobalClasses,
+      ...CssGlobalClassProvider.triggerCharacters,
+    ),
+    vscode.languages.registerHoverProvider(CSS, cssGlobalClasses),
+    vscode.languages.registerDefinitionProvider(CSS, cssGlobalClasses),
     vscode.languages.registerColorProvider(
       [CSS, ...SCRIPT_LANGUAGES],
       new PropertyColorProvider(properties),

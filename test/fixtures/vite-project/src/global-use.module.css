@@ -1,0 +1,11 @@
+:global(.app-shell) .local {
+  color: red;
+}
+
+:global(.own-global) {
+  margin: 0;
+}
+
+:global(.te) .x {
+  color: blue;
+}

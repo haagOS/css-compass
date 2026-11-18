@@ -73,3 +73,31 @@ export async function activateExtension(): Promise<TestApi> {
   assert.ok(extension, "extension under test not found");
   return extension.activate();
 }
+
+/**
+ * Runs Go to Definition (Ctrl+Click) at `offset`. Editor commands need the test window to have
+ * the OS focus; without it they do nothing (the window opened behind another one). Returns false
+ * in that case, so the caller can skip with that reason instead of timing out.
+ */
+export async function revealDefinitionAt(
+  doc: vscode.TextDocument,
+  offset: number,
+): Promise<boolean> {
+  if (!vscode.window.state.focused) {
+    const focused = await waitFor(
+      "the test window to get the OS focus",
+      () => (vscode.window.state.focused ? true : undefined),
+      5_000,
+    ).catch(() => false);
+    if (!focused) return false;
+  }
+  const editor = await vscode.window.showTextDocument(doc, { preserveFocus: false });
+  const position = doc.positionAt(offset);
+  editor.selection = new vscode.Selection(position, position);
+  await vscode.commands.executeCommand("workbench.action.focusActiveEditorGroup");
+  await vscode.commands.executeCommand("editor.action.revealDefinition");
+  return true;
+}
+
+export const NO_FOCUS =
+  "skipped: the VS Code test window has no OS focus (editor commands need it)";
