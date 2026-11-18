@@ -5,4 +5,5 @@
   box-shadow: var(--ds-shadow);
   padding: var();
   border-color: var(--ds-ac);
+  background: rgba(var(--ds-blue-0-rgb), 0.25);
 }

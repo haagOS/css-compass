@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { PropertyColorProvider } from "./vscode/colors.ts";
 import { ModuleCompletionProvider } from "./vscode/completion.ts";
 import { CssPropertyProvider } from "./vscode/css-providers.ts";
 import { ModuleDefinitionProvider } from "./vscode/definition.ts";
@@ -54,6 +55,10 @@ export function activate(context: vscode.ExtensionContext): TestApi {
       ...CssPropertyProvider.triggerCharacters,
     ),
     vscode.languages.registerHoverProvider(CSS, css),
+    vscode.languages.registerColorProvider(
+      [CSS, ...SCRIPT_LANGUAGES],
+      new PropertyColorProvider(properties),
+    ),
     vscode.languages.registerCompletionItemProvider(
       SCRIPT_LANGUAGES,
       tsProperties,

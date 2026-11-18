@@ -166,6 +166,12 @@ export class SourceStores implements vscode.Disposable {
     return pending;
   }
 
+  /** Whether the folder's store is built or being built (for tests). */
+  isStarted(folder: vscode.WorkspaceFolder): boolean {
+    const key = folder.uri.toString();
+    return this.built.has(key) || this.building.has(key);
+  }
+
   /** Drops the folder's store; the next request builds it again. */
   invalidate(folder: vscode.WorkspaceFolder): void {
     const key = folder.uri.toString();
