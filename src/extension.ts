@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
-import { diskLoader } from "./core/disk-loader.ts";
 import { ModuleDefinitionProvider } from "./vscode/definition.ts";
 import { ModuleFiles } from "./vscode/module-files.ts";
+import { DocumentLoader, syncModuleFiles } from "./vscode/module-sync.ts";
 import { disposeTiming } from "./vscode/timing.ts";
 
 /** Same selector shape as the built-in TypeScript support, so our results come first (SPEC §10). */
@@ -12,9 +12,17 @@ const SCRIPT_LANGUAGES: vscode.DocumentFilter[] = [
   "javascriptreact",
 ].map((language) => ({ language, scheme: "file" }));
 
-export function activate(context: vscode.ExtensionContext): void {
-  const files = new ModuleFiles(diskLoader);
+/** Returned from `activate` for integration tests; not a public API. */
+export interface TestApi {
+  readonly moduleFiles: ModuleFiles;
+}
+
+export function activate(context: vscode.ExtensionContext): TestApi {
+  const loader = new DocumentLoader();
+  const files = new ModuleFiles(loader);
   context.subscriptions.push(
+    files,
+    syncModuleFiles(files, loader),
     vscode.languages.registerDefinitionProvider(
       SCRIPT_LANGUAGES,
       new ModuleDefinitionProvider(files),
@@ -22,6 +30,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.workspace.onDidCloseTextDocument((d) => files.imports.delete(d.uri.toString())),
     { dispose: disposeTiming },
   );
+  return { moduleFiles: files };
 }
 
 export function deactivate(): void {}

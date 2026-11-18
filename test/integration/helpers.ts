@@ -1,5 +1,6 @@
 import * as assert from "node:assert/strict";
 import * as vscode from "vscode";
+import type { TestApi } from "../../src/extension.ts";
 
 const root = vscode.workspace.workspaceFolders?.[0]?.uri;
 if (!root) throw new Error("integration tests need the fixture workspace folder");
@@ -67,8 +68,8 @@ export async function waitForTypeScript(): Promise<void> {
 }
 
 /** Opening a document starts activation without waiting for it; tests need it done. */
-export async function activateExtension(): Promise<void> {
-  const extension = vscode.extensions.getExtension("local.css-compass");
+export async function activateExtension(): Promise<TestApi> {
+  const extension = vscode.extensions.getExtension<TestApi>("local.css-compass");
   assert.ok(extension, "extension under test not found");
-  await extension.activate();
+  return extension.activate();
 }

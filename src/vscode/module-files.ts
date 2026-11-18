@@ -10,6 +10,9 @@ import { ImportCache, type ModuleImport } from "../core/ts-scan.ts";
 export class ModuleFiles {
   readonly imports = new ImportCache();
   readonly store: CssStore;
+  private readonly loaded = new vscode.EventEmitter<string>();
+  /** Fires with the file key when a file is cached for the first time. */
+  readonly onDidLoad = this.loaded.event;
 
   constructor(loader: FileLoader) {
     this.store = new CssStore(loader, { index: false });
@@ -27,7 +30,16 @@ export class ModuleFiles {
 
   async load(document: vscode.TextDocument, binding: ModuleImport): Promise<CssFile | undefined> {
     const file = this.resolve(document, binding);
-    return file === undefined ? undefined : this.store.load(file);
+    if (file === undefined) return undefined;
+    const known = this.store.get(file);
+    if (known) return known;
+    const loaded = await this.store.load(file);
+    if (loaded) this.loaded.fire(file);
+    return loaded;
+  }
+
+  dispose(): void {
+    this.loaded.dispose();
   }
 }
 
