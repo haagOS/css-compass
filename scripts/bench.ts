@@ -6,7 +6,10 @@ import {
   generateStylesheet,
   minify,
 } from "../src/core/bench-input.ts";
+import { colorUsages } from "../src/core/color-usages.ts";
+import { parseColor } from "../src/core/color.ts";
 import { moduleExports } from "../src/core/module-classes.ts";
+import { byPreference, resolveValue } from "../src/core/resolve.ts";
 import { completionSiteAt, ImportCache, usageAt } from "../src/core/ts-scan.ts";
 import { scanCss } from "../src/core/scan.ts";
 import { SymbolIndex } from "../src/core/symbol-index.ts";
@@ -109,3 +112,48 @@ measure(
   1,
 );
 measure("import header parse (cold)", () => new ImportCache().get("doc", component));
+
+// Custom properties (§8 warm budget, owned by M3), on the generated stylesheet's tokens.
+const tokenIndex = new SymbolIndex();
+tokenIndex.setFile("tokens.css", symbols);
+const lookup = (name: string) => tokenIndex.findProperty(name);
+const names = [...tokenIndex.propertyNames()];
+console.log(`tokens: ${names.length} properties`);
+const chainHead = names.find((n) => resolveValue(`var(${n})`, lookup).steps.length >= 3);
+if (!chainHead) throw new Error("bench input broken: no var() chain of 3 steps");
+measure("resolve a 3-step var() chain", () => resolveValue(`var(${chainHead})`, lookup), 1);
+const resolveAll = () => {
+  const resolved = new Map<string, unknown>();
+  for (const name of names) {
+    const counting = byPreference(lookup(name))[0];
+    if (!counting) continue;
+    const r = resolveValue(counting.symbol.value, lookup, counting.symbol.scopeParts);
+    resolved.set(name, parseColor(r.value));
+  }
+  return resolved;
+};
+measure("completion list: resolve all (cold cache)", resolveAll);
+const cached = resolveAll();
+measure(
+  "completion list: cached values + same-file check (warm)",
+  () => {
+    let kept = 0;
+    for (const name of names) {
+      if (!cached.has(name)) continue;
+      if (lookup(name).every((d) => d.file === "current.css")) continue;
+      kept++;
+    }
+    return kept;
+  },
+  1,
+);
+const usageCss = Array.from(
+  { length: 300 },
+  (_, i) =>
+    `.u${i} { color: var(--ds-color-${(i * 3) % 600}); box-shadow: 0 0 rgba(var(--ds-color-${(i * 3) % 600}), .5); }`,
+).join("\n");
+if (colorUsages(usageCss).length !== 600) throw new Error("bench input broken: colour usages");
+measure("colour usages + resolution in a 300-use CSS file", () => {
+  for (const usage of colorUsages(usageCss))
+    parseColor(resolveValue(usage.expression, lookup).value);
+});

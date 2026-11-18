@@ -84,8 +84,9 @@ rules, class names and custom properties, each with an exact range.
   - the range of the name
   - the raw value
   - the enclosing selector (`:root`, `.theme-contrast`, …), which is the property's scope,
-    plus its parts if it is a list (`:root, .theme-default`). Nested `&` scopes are resolved
-    in M3.
+    plus its parts if it is a list (`:root, .theme-default`). Nesting is resolved: `&` is
+    replaced by the parent selector, a nested rule without `&` is a descendant, and lists are
+    combined (`:root { &.dark {} }` → `:root.dark`; at most 16 combinations).
   - a value that ends at `;` or `}` only outside strings, `url()` and parentheses
 - **R-SC-7 MUST** record each rule's selector and block range. Hover slices and parses the
   declarations from the cached file text when it needs them.
@@ -159,7 +160,14 @@ contexts**:
 | R-CSS-5 | SHOULD | Completion, hover and definition for `composes: a from "./other.module.css"`. |
 
 The built-in CSS language service keeps handling everything else (property names, values,
-literal colour swatches). CSS Compass must not duplicate it.
+literal colour swatches). CSS Compass must not duplicate it: completion and definition leave
+out tokens declared only in the current file. **Known limitation:** the built-in list also
+contains every token name *used* in the current file (without value or source), so such a
+name appears twice; CSS Compass's entry is the one with the value, source and swatch.
+
+Completion triggers on `(` and `-` and replaces the whole `--…` token. Colours are given as
+`#rrggbb` or `rgba(r, g, b, a)` so the suggest widget draws a swatch. Resolved values are
+cached until the folder's index changes.
 
 ### 5.4 Custom properties in TS / TSX / JS / JSX
 
@@ -171,7 +179,12 @@ literal colour swatches). CSS Compass must not duplicate it.
 ### 5.5 Colours
 
 - **R-COL-1 SHOULD** show a colour swatch next to each `var(--x)` usage whose value resolves to
-  a colour (DocumentColorProvider, read-only: the picker doesn't rewrite the token).
+  a colour (DocumentColorProvider, read-only: the picker doesn't rewrite the token). A colour
+  function with `var()` arguments gets one too: `rgba(var(--x-rgb), 0.25)`. An RGB triplet
+  token (`--x-rgb: 31, 78, 140`) is not a colour by itself. In TS/JS only usages inside
+  strings count. Documents without `var(` return before the index is touched.
+- Recognised colours: hex (3/4/6/8 digits), `rgb()`/`rgba()`/`hsl()`/`hsla()` (comma and
+  space syntax), named colours, `transparent`. Not: `oklch()`, `lab()`, `color-mix()`.
 
 ## 6. Resolving custom property values
 
@@ -181,7 +194,14 @@ literal colour swatches). CSS Compass must not duplicate it.
 - **R-VAR-2 MUST** use the fallback value in `var(--a, fallback)` when `--a` isn't defined.
 - **R-VAR-3 MUST** stop on cycles and at a depth of 10, showing the unresolved remainder.
 - **R-VAR-4 MUST** list definitions in different scopes (`:root`, `.theme-default`,
-  `.theme-contrast`) separately, in source order.
+  `.theme-contrast`) separately.
+- **R-VAR-5 MUST** decide which definition counts (for the swatch, completion value and the
+  first Go to Definition result, which TS/JS jumps to directly): same scope as the use, then
+  `:root`, then any; within those, definitions outside at-rules (`@media` …) first; then the
+  later one, as in the cascade. Lists and hover show this definition first.
+
+Each substituted value keeps the scope of the definition it came from, so its own `var()`s
+are looked up there first.
 
 ## 7. Configuration
 
@@ -201,7 +221,16 @@ How sources work:
   `exports` map (conditions `style`, `default`). They resolve from the workspace folder.
   There are no hard-coded `node_modules` paths.
 - **R-CFG-2 MUST** fall back to `cssVariables.lookupFiles` from vscode-css-variables if
-  `cssCompass.sources` is unset. Existing projects then work without changes.
+  `cssCompass.sources` is unset: the default is then `src/**/*.css` plus those entries. Only
+  values somebody set count (`inspect()`), never the other extension's own default. Existing
+  projects then work without changes.
+- An entry is a package specifier if it has no glob characters or path prefix and names an
+  installed package; otherwise it is a glob relative to the folder. Globs that mention
+  `node_modules` search it; others exclude it. Package files and their `package.json` are
+  watched explicitly (VS Code doesn't watch `node_modules` by default); a configured package
+  that isn't installed yet is picked up when it appears.
+- The index is built per workspace folder on the first request that needs it. A settings change
+  drops it; a build that finishes after a change is discarded.
 - **R-CFG-3 MUST** treat `*.module.css` files matched by `sources` as module files: their
   custom properties and `:global` classes are global, and their local classes are **not**.
 - **R-CFG-4 MUST** apply setting changes without a reload.
@@ -315,7 +344,7 @@ the repo.
 | M0 | Scaffold (build, test, package, install) + **spike for risk 1** — done |
 | M1 | CSS scanner + index + cache + benchmarks (§4, §8) — done |
 | M2 | Module classes in TS/TSX (§5.1) — done (R-MC-3 moved, R-MC-10 in M5) |
-| M3 | Custom properties: CSS, TS strings, value resolution, colours (§5.3, §5.4, §5.5, §6) |
+| M3 | Custom properties: CSS, TS strings, value resolution, colours (§5.3, §5.4, §5.5, §6) — done |
 | M4 | Global classes (§5.2, R-CSS-4) |
 | M5 | Diagnostics (R-MC-10, R-GC-7), `composes`, acceptance run on the reference project, `v0.1.0` `.vsix` |
 | — | R-MC-3: tsconfig `paths` and bare specifiers for CSS Module imports (after M4) |

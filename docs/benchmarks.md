@@ -38,3 +38,19 @@ included: VS Code's own `document.getText()` and IPC.
 | import header parse, cold | 0.007 ms | 0.008 ms | — |
 
 Scan numbers from M1 re-measured: 1.40 ms median for 10k lines (budget 3 ms).
+
+## M3 — 2026-11-18
+
+Windows 11, Node 24.18. Custom properties on the generated stylesheet's tokens (701 distinct
+names, 801 definitions incl. two theme classes; chains of `var()`, a `data:` URL). Pure core,
+without VS Code's own `CompletionItem` creation and IPC.
+
+| Case | Median | p95 | Budget |
+|---|---|---|---|
+| resolve a 3-step `var()` chain | 0.004 ms | 0.008 ms | ≤ 1 ms |
+| completion list, warm cache (lookups + same-file check, 701 names) | 0.19 ms | 0.28 ms | ≤ 1 ms |
+| completion list, cold cache (resolve + parse colour, 701 names) | 2.23 ms | 3.22 ms | ≤ 20 ms (cold) |
+| colour swatches for a CSS file with 300 `var()` uses (no cache) | 3.42 ms | 4.71 ms | — |
+
+The cold case runs after any change to a source file (the cache is keyed by the index
+version), then the list is warm again until the next change.
