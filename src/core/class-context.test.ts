@@ -182,3 +182,15 @@ describe("classNamesIn", () => {
     }
   });
 });
+
+describe("comparisons", () => {
+  test("a compared string is a value, not a class", () => {
+    expect(token('clsx(styles.root, height === "con|tent" && "a")')).toBeUndefined();
+    expect(token('clsx("con|tent" !== height && "a")')).toBeUndefined();
+    expect(token('clsx(size == "s|m" ? "text-sm" : "")')).toBeUndefined();
+    expect(token('clsx(size === "sm" ? "text-|sm" : "")')).toBe('text-sm [text-sm] "text-"');
+    expect(
+      all('<p className={clsx(height === "content" && "a", x != "b" ? "c" : "d")} />'),
+    ).toEqual(["a", "c", "d"]);
+  });
+});

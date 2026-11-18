@@ -150,7 +150,8 @@ only as an object (after `(` `,` `{` `[` `?` `:` `=` `&&` `||`), `${` and groupi
 parentheses; another call, a block or a statement end means no class context. Inside an object
 only keys count (directly after `{` or `,`, followed by `:`); identifier keys
 (`{ hidden: open }`) get hover and definition, not completion. A string that is a CSS Module
-usage (`styles["x"]`) is never a global class. The context is checked before the index is
+usage (`styles["x"]`) is never a global class, nor is an operand of `==`, `===`, `!=` or `!==`
+(`size === "sm" && "text-sm"`: only `text-sm` is a class). The context is checked before the index is
 touched. Completion triggers on `"` `'` `` ` `` and space. Definitions list workspace files
 before packages, so Ctrl+Click lands on the project's own rule.
 

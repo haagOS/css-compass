@@ -119,6 +119,7 @@ export function classTokenAt(
     const left = /[^\s"'`{}$]*$/.exec(text.slice(span.segmentStart, offset))?.[0] ?? "";
     const right = /^[^\s"'`{}$]*/.exec(text.slice(offset, span.segmentEnd))?.[0] ?? "";
     const start = offset - left.length;
+    if (isCompared(text, span.open, span.segmentEnd)) return undefined;
     if (!inClassContext(text, span.open, classFunctions, isKey(text, span.open))) return undefined;
     return {
       name: left + right,
@@ -186,6 +187,7 @@ export function classNamesIn(
       if (close >= lineEnd) break;
       if (
         !dynamic &&
+        !isCompared(text, i, close) &&
         usageAt(text, i + 1, imports)?.kind !== "member" &&
         inClassContext(text, i, classFunctions, isKey(text, i))
       ) {
@@ -199,6 +201,18 @@ export function classNamesIn(
     lineStart = lineEnd + 1;
   }
   return names;
+}
+
+/**
+ * The string from `open` to its closing quote at `close` is an operand of `==`, `===`, `!=` or
+ * `!==` (`size === "small" && "text-sm"`): a value, not a class name.
+ */
+function isCompared(text: string, open: number, close: number): boolean {
+  const before = previousNonSpace(text, open - 1);
+  if (text[before] === "=" && (text[before - 1] === "=" || text[before - 1] === "!")) return true;
+  let after = close + 1;
+  while (after < text.length && isSpace(text.charCodeAt(after))) after++;
+  return text.startsWith("==", after) || text.startsWith("!=", after);
 }
 
 /** The string opening at `open` is an object key: after `{` or `,`, and followed by `:`. */
