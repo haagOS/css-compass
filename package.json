@@ -35,6 +35,45 @@
     "typescript": "^6.0.3",
     "vitest": "^5.1.1"
   },
+  "contributes": {
+    "configuration": {
+      "title": "CSS Compass",
+      "properties": {
+        "cssCompass.localsConvention": {
+          "type": "string",
+          "enum": [
+            "asIs",
+            "camelCase",
+            "camelCaseOnly",
+            "dashes",
+            "dashesOnly"
+          ],
+          "default": "asIs",
+          "scope": "resource",
+          "markdownDescription": "How CSS Module class names map to JS names. Use the same value as `css.modules.localsConvention` in your Vite config."
+        },
+        "cssCompass.debug.timings": {
+          "type": "boolean",
+          "default": false,
+          "description": "Log how long each request takes to the \"CSS Compass\" output channel."
+        }
+      }
+    },
+    "configurationDefaults": {
+      "[typescript]": {
+        "editor.gotoLocation.multipleDefinitions": "goto"
+      },
+      "[typescriptreact]": {
+        "editor.gotoLocation.multipleDefinitions": "goto"
+      },
+      "[javascript]": {
+        "editor.gotoLocation.multipleDefinitions": "goto"
+      },
+      "[javascriptreact]": {
+        "editor.gotoLocation.multipleDefinitions": "goto"
+      }
+    }
+  },
   "activationEvents": [
     "onLanguage:css",
     "onLanguage:javascript",

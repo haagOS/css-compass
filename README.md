@@ -5,6 +5,32 @@ properties — from your project and from packages in `node_modules`. Lean and f
 
 Status: early development. See `SPEC.md` in the repository.
 
+## Go to Definition jumps straight to the CSS
+
+With Vite's types, TypeScript answers Ctrl+Click on `styles.shell` too (with its generic
+`declare module "*.module.css"`), so VS Code would show a list with two entries. CSS Compass
+therefore sets this default for TypeScript and JavaScript files:
+
+```json
+"editor.gotoLocation.multipleDefinitions": "goto"
+```
+
+Side effect: in those languages, every Go to Definition with several results (for example a
+function with overloads) jumps to the first result instead of showing the list. Press
+<kbd>Alt</kbd>+<kbd>F12</kbd> (Peek Definition) to see all results. To get the list back, set
+the value to `"peek"` in your settings, for example only for TypeScript React:
+
+```json
+"[typescriptreact]": { "editor.gotoLocation.multipleDefinitions": "peek" }
+```
+
+## Settings
+
+| Setting | Default | Meaning |
+|---|---|---|
+| `cssCompass.localsConvention` | `asIs` | Same value as `css.modules.localsConvention` in your Vite config. |
+| `cssCompass.debug.timings` | `false` | Log how long each request takes to the "CSS Compass" output channel. |
+
 ## Development
 
 ```bash

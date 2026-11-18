@@ -1,124 +1,82 @@
 /// <reference types="mocha" />
-// Spike for SPEC §10 risk 1: how TypeScript's own definitions for CSS Module usages merge with
-// ours, and whether Ctrl+Click in "goto" mode lands on our result.
+// SPEC §10 risk 1: TypeScript answers Go to Definition on CSS Module usages too. These tests pin
+// that behaviour and check that Ctrl+Click still lands on our result, through the contributed
+// `goto` default (R-CFG-5) alone.
 import * as assert from "node:assert/strict";
 import * as vscode from "vscode";
+import {
+  activateExtension,
+  assertHas,
+  definitionsAt,
+  fixture,
+  isFile,
+  names,
+  offsetOf,
+  waitFor,
+  waitForTypeScript,
+} from "./helpers.ts";
 
-const root = vscode.workspace.workspaceFolders?.[0]?.uri;
-if (!root) throw new Error("integration tests need the fixture workspace folder");
-const appUri = vscode.Uri.joinPath(root, "src", "app.tsx");
-const cssUri = vscode.Uri.joinPath(root, "src", "a.module.css");
-const shellRange = new vscode.Range(0, 1, 0, 6);
+const appUri = fixture("app.tsx");
+const cssUri = fixture("a.module.css");
+const shellStart = new vscode.Position(0, 1);
 
-type Definition = vscode.Location | vscode.LocationLink;
-const targetUri = (d: Definition) => ("targetUri" in d ? d.targetUri : d.uri);
-const isFile = (d: Definition, name: string) => targetUri(d).path.endsWith(`/${name}`);
-const names = (found: Definition[]) => found.map((d) => targetUri(d).path.split("/").pop());
-
-function assertHas(found: Definition[], name: string): void {
-  assert.ok(
-    found.some((d) => isFile(d, name)),
-    `expected ${name} in [${names(found).join(", ")}]`,
-  );
-}
-
-async function definitionsAt(doc: vscode.TextDocument, offset: number): Promise<Definition[]> {
-  return vscode.commands.executeCommand<Definition[]>(
-    "vscode.executeDefinitionProvider",
-    doc.uri,
-    doc.positionAt(offset),
-  );
-}
-
-async function waitFor<T>(what: string, probe: () => Promise<T | undefined>): Promise<T> {
-  const deadline = Date.now() + 60_000;
-  while (Date.now() < deadline) {
-    const value = await probe();
-    if (value !== undefined) return value;
-    await new Promise((resolve) => setTimeout(resolve, 250));
-  }
-  throw new Error(`timed out after 60 s waiting for ${what}`);
-}
-
-suite("definition merging with TypeScript (spike)", () => {
+suite("definition merging with TypeScript", () => {
   let doc: vscode.TextDocument;
-  let text: string;
-  let stub: vscode.Disposable;
-  const offsetOf = (needle: string, delta: number) => {
-    const index = text.indexOf(needle);
-    assert.notEqual(index, -1, `fixture lacks ${needle}`);
-    return index + delta;
-  };
 
   suiteSetup(async () => {
+    await activateExtension();
+    await waitForTypeScript();
     doc = await vscode.workspace.openTextDocument(appUri);
-    text = doc.getText();
-    await vscode.window.showTextDocument(doc);
-
-    // VS Code first answers from a syntax-only TypeScript server, which resolves imports to the
-    // import line. A result in util.ts means the full semantic server has loaded the project.
-    const local = offsetOf("+ local", 2);
-    await waitFor("the semantic TypeScript server", async () => {
-      const found = await definitionsAt(doc, local);
-      return found.some((d) => isFile(d, "util.ts")) ? found : undefined;
-    });
-
-    stub = vscode.languages.registerDefinitionProvider(
-      { language: "typescriptreact", scheme: "file" },
-      { provideDefinition: () => new vscode.Location(cssUri, shellRange) },
-    );
   });
 
-  suiteTeardown(async () => {
-    stub?.dispose();
-    await vscode.workspace
-      .getConfiguration("editor")
-      .update("gotoLocation.multipleDefinitions", undefined, vscode.ConfigurationTarget.Global);
+  test("the contributed default is goto for TS/JS languages", () => {
+    for (const languageId of ["typescript", "typescriptreact", "javascript", "javascriptreact"]) {
+      const value = vscode.workspace
+        .getConfiguration("editor", { languageId })
+        .get("gotoLocation.multipleDefinitions");
+      assert.equal(value, "goto", languageId);
+    }
   });
 
   test("TypeScript answers `styles` with the ambient declaration", async () => {
-    const found = await definitionsAt(doc, offsetOf("styles.shell", 1));
+    const found = await definitionsAt(doc, offsetOf(doc, "styles.shell", 1));
     assertHas(found, "css-modules.d.ts");
     assertHas(found, "a.module.css");
   });
 
   test("TypeScript answers `styles.shell` with the index signature", async () => {
-    const found = await definitionsAt(doc, offsetOf("styles.shell", 8));
+    const found = await definitionsAt(doc, offsetOf(doc, "styles.shell", 8));
     assertHas(found, "css-modules.d.ts");
     assertHas(found, "a.module.css");
   });
 
   test('TypeScript does not answer `styles["shell"]`', async () => {
-    const found = await definitionsAt(doc, offsetOf('styles["shell"]', 9));
+    const found = await definitionsAt(doc, offsetOf(doc, 'styles["shell"]', 9));
     assert.ok(
       !found.some((d) => isFile(d, "css-modules.d.ts")),
-      `expected no css-modules.d.ts in [${names(found).join(", ")}]`,
+      `expected no css-modules.d.ts in [${names(found)}]`,
     );
   });
 
-  for (const [label, needle, delta] of [
-    ["styles.shell", "styles.shell", 8],
-    ["styles", "styles.shell", 1],
+  for (const [label, needle, delta, expected] of [
+    ["styles.shell", "styles.shell", 8, shellStart],
+    ["styles", "styles.shell", 1, new vscode.Position(0, 0)],
   ] as const) {
-    test(`Go to Definition in "goto" mode lands on our result for \`${label}\``, async () => {
+    test(`Ctrl+Click lands on our result for \`${label}\``, async () => {
       // Only meaningful while TypeScript competes with a result of its own.
-      const found = await definitionsAt(doc, offsetOf(needle, delta));
-      assert.ok(found.length >= 2, `expected a competing result in [${names(found).join(", ")}]`);
+      const found = await definitionsAt(doc, offsetOf(doc, needle, delta));
+      assert.ok(found.length >= 2, `expected a competing result in [${names(found)}]`);
 
-      await vscode.workspace
-        .getConfiguration("editor")
-        .update("gotoLocation.multipleDefinitions", "goto", vscode.ConfigurationTarget.Global);
       const editor = await vscode.window.showTextDocument(doc);
-      const position = doc.positionAt(offsetOf(needle, delta));
+      const position = doc.positionAt(offsetOf(doc, needle, delta));
       editor.selection = new vscode.Selection(position, position);
-
       await vscode.commands.executeCommand("editor.action.revealDefinition");
-      const landed = await waitFor("Go to Definition to leave app.tsx", async () => {
+      const landed = await waitFor("Go to Definition to leave app.tsx", () => {
         const active = vscode.window.activeTextEditor;
         return active && active.document.uri.toString() !== appUri.toString() ? active : undefined;
       });
       assert.equal(landed.document.uri.toString(), cssUri.toString());
-      assert.deepEqual(landed.selection.start, shellRange.start);
+      assert.deepEqual(landed.selection.start, expected);
     });
   }
 });
