@@ -90,3 +90,35 @@ export function generateModule(count: number): string {
   }
   return out.join("\n");
 }
+
+/** A TSX component of about `lines` lines using global classes in className and clsx calls. */
+export function generateClassComponent(lines: number): string {
+  const out: string[] = [
+    'import styles from "./component.module.css";',
+    'import clsx from "clsx";',
+    "",
+  ];
+  out.push("export function List({ open }: { open: boolean }) {", "  return (", "    <ul>");
+  for (let i = 0; out.length < lines - 3; i++) {
+    out.push(
+      `      <li className="util-${i % 400} util-${(i + 7) % 400}">Item ${i}: don't stop</li>`,
+      "      <li",
+      "        className={clsx(",
+      "          styles.item,",
+      `          open && "util-${(i + 3) % 400}",`,
+      `          { "util-${(i + 5) % 400}": open },`,
+      "        )}",
+      "      />",
+    );
+  }
+  out.push("    </ul>", "  );", "}", "");
+  return out.join("\n");
+}
+
+/** A stylesheet with `count` global utility classes. */
+export function generateUtilities(count: number): string {
+  const out: string[] = ["@layer utilities {"];
+  for (let i = 0; i < count; i++) out.push(`  .util-${i} {`, `    margin: ${i}px;`, "  }");
+  out.push("}");
+  return out.join("\n");
+}

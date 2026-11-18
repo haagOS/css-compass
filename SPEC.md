@@ -142,6 +142,18 @@ contexts**:
 - **R-GC-3 MUST** split the string on whitespace. The feature applies to the class name under
   the cursor.
 
+How class contexts are found (no AST): the string under the cursor is found on its line
+(templates only on one line); then a backward scan of at most 50 lines, with bracket depth and
+skipping strings, must reach `className=`/`class=` (directly or before the enclosing `{`) or an
+enclosing `(` after a class function name. On the way it may pass `[` only as an array and `{`
+only as an object (after `(` `,` `{` `[` `?` `:` `=` `&&` `||`), `${` and grouping
+parentheses; another call, a block or a statement end means no class context. Inside an object
+only keys count (directly after `{` or `,`, followed by `:`); identifier keys
+(`{ hidden: open }`) get hover and definition, not completion. A string that is a CSS Module
+usage (`styles["x"]`) is never a global class. The context is checked before the index is
+touched. Completion triggers on `"` `'` `` ` `` and space. Definitions list workspace files
+before packages, so Ctrl+Click lands on the project's own rule.
+
 | ID | Level | Behaviour |
 |---|---|---|
 | R-GC-4 | MUST | **Completion** of every global class from the sources, with a declaration preview and the source label (package name or relative path). |
@@ -156,7 +168,7 @@ contexts**:
 | R-CSS-1 | MUST | **Completion** of custom properties inside `var(` with the resolved value, a colour swatch for colours, and the source label. |
 | R-CSS-2 | MUST | **Hover** on `var(--x)` and on a `--x:` declaration shows every definition with its scope, and resolves the `var()` chain (§6). |
 | R-CSS-3 | MUST | **Go to definition** on `--x` in `var(--x)` jumps to its definition(s). With several scopes, the result is a peek list. |
-| R-CSS-4 | SHOULD | Completion, hover and definition for global classes in `:global(.…)` and in `composes: … from global`. |
+| R-CSS-4 | SHOULD | Completion, hover and definition for global classes in `:global(.…)` (done in M4; classes declared in the current file are left out). `composes: … from global` moves to M5 with R-SC-9. |
 | R-CSS-5 | SHOULD | Completion, hover and definition for `composes: a from "./other.module.css"`. |
 
 The built-in CSS language service keeps handling everything else (property names, values,
@@ -345,6 +357,6 @@ the repo.
 | M1 | CSS scanner + index + cache + benchmarks (§4, §8) — done |
 | M2 | Module classes in TS/TSX (§5.1) — done (R-MC-3 moved, R-MC-10 in M5) |
 | M3 | Custom properties: CSS, TS strings, value resolution, colours (§5.3, §5.4, §5.5, §6) — done |
-| M4 | Global classes (§5.2, R-CSS-4) |
-| M5 | Diagnostics (R-MC-10, R-GC-7), `composes`, acceptance run on the reference project, `v0.1.0` `.vsix` |
+| M4 | Global classes (§5.2, R-CSS-4) — done (`composes … from global` in M5) |
+| M5 | Diagnostics (R-MC-10, R-GC-7), `composes` (R-SC-9, R-CSS-5, `composes … from global`), bundle size headroom, acceptance run on the reference project, `v0.1.0` `.vsix` |
 | — | R-MC-3: tsconfig `paths` and bare specifiers for CSS Module imports (after M4) |

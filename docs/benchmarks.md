@@ -54,3 +54,15 @@ without VS Code's own `CompletionItem` creation and IPC.
 
 The cold case runs after any change to a source file (the cache is keyed by the index
 version), then the list is warm again until the next change.
+
+## M4 — 2026-11-18
+
+Windows 11, Node 24.18. Global classes: a generated 1,002-line TSX component with className
+attributes and multi-line `clsx(` calls (string arguments and object keys, JSX text with
+apostrophes), and 400 utility classes in one stylesheet. Pure core.
+
+| Case | Median | p95 | Budget |
+|---|---|---|---|
+| class context in a multi-line `clsx(` + lookup | 0.003 ms | 0.003 ms | ≤ 1 ms |
+| class context in a `className` attribute + lookup | 0.002 ms | 0.002 ms | ≤ 1 ms |
+| completion list, 400 classes with their first definition | 0.110 ms | 0.116 ms | ≤ 1 ms |

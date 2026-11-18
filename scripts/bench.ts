@@ -1,16 +1,19 @@
 // Benchmarks for the pure core (SPEC §8). Prints median and p95 per case; budgets are checked by
 // reading the output and recorded in docs/benchmarks.md.
 import {
+  generateClassComponent,
   generateComponent,
   generateModule,
   generateStylesheet,
+  generateUtilities,
   minify,
 } from "../src/core/bench-input.ts";
+import { classTokenAt } from "../src/core/class-context.ts";
 import { colorUsages } from "../src/core/color-usages.ts";
 import { parseColor } from "../src/core/color.ts";
 import { moduleExports } from "../src/core/module-classes.ts";
 import { byPreference, resolveValue } from "../src/core/resolve.ts";
-import { completionSiteAt, ImportCache, usageAt } from "../src/core/ts-scan.ts";
+import { completionSiteAt, ImportCache, parseImports, usageAt } from "../src/core/ts-scan.ts";
 import { scanCss } from "../src/core/scan.ts";
 import { SymbolIndex } from "../src/core/symbol-index.ts";
 
@@ -157,3 +160,50 @@ measure("colour usages + resolution in a 300-use CSS file", () => {
   for (const usage of colorUsages(usageCss))
     parseColor(resolveValue(usage.expression, lookup).value);
 });
+
+// Global classes (§8 warm budget, owned by M4): class context detection plus lookups.
+const classComponent = generateClassComponent(1_000);
+const classImports = parseImports(classComponent);
+const functions = ["clsx", "cn", "cx", "classnames"];
+const utilities = new SymbolIndex();
+utilities.setFile("utilities.css", scanCss(generateUtilities(400), { module: false }));
+const lastClsx = classComponent.lastIndexOf('open && "util-') + 15;
+const lastAttribute = classComponent.lastIndexOf('className="util-') + 14;
+for (const [what, offset] of [
+  ["clsx", lastClsx],
+  ["attribute", lastAttribute],
+] as const) {
+  const token = classTokenAt(classComponent, offset, functions, classImports);
+  if (!token || utilities.findClass(token.name).length === 0) {
+    throw new Error(`bench input broken: no ${what} class token at the cursor`);
+  }
+}
+console.log(`class component: ${classComponent.split("\n").length} lines, 400 utility classes`);
+measure(
+  "class context in multi-line clsx + lookup",
+  () => {
+    const token = classTokenAt(classComponent, lastClsx, functions, classImports);
+    if (token) utilities.findClass(token.name);
+  },
+  1,
+);
+measure(
+  "class context in className attribute + lookup",
+  () => {
+    const token = classTokenAt(classComponent, lastAttribute, functions, classImports);
+    if (token) utilities.findClass(token.name);
+  },
+  1,
+);
+measure(
+  "global class completion list (400 classes)",
+  () => {
+    let n = 0;
+    for (const name of utilities.classNames()) {
+      const defs = utilities.findClass(name);
+      if (defs.filter((d) => !d.file.includes("node_modules")).concat(defs)[0]) n++;
+    }
+    return n;
+  },
+  1,
+);
