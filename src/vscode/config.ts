@@ -12,3 +12,13 @@ export function localsConvention(scope: vscode.Uri): LocalsConvention {
 export function debugTimings(): boolean {
   return vscode.workspace.getConfiguration(SECTION).get<boolean>("debug.timings") ?? false;
 }
+
+const DEFAULT_CLASS_FUNCTIONS = ["clsx", "cn", "cx", "classnames"];
+
+/** Functions whose arguments are class contexts (§5.2). */
+export function classFunctions(scope: vscode.Uri): string[] {
+  const value = vscode.workspace.getConfiguration(SECTION, scope).get<unknown>("classFunctions");
+  return Array.isArray(value)
+    ? value.filter((v): v is string => typeof v === "string")
+    : DEFAULT_CLASS_FUNCTIONS;
+}

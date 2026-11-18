@@ -47,6 +47,20 @@
           "scope": "resource",
           "markdownDescription": "CSS files whose custom properties and global classes are indexed: globs relative to the workspace folder (`src/**/*.css`) or package specifiers (`@acme/design-system/style.css`). When not set: `src/**/*.css` plus `cssVariables.lookupFiles`."
         },
+        "cssCompass.classFunctions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "clsx",
+            "cn",
+            "cx",
+            "classnames"
+          ],
+          "scope": "resource",
+          "markdownDescription": "Functions whose string arguments, array items and object keys are class names, e.g. `clsx(\"font-size_s\", { active: isActive })`."
+        },
         "cssCompass.localsConvention": {
           "type": "string",
           "enum": [

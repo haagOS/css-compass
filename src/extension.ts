@@ -3,6 +3,7 @@ import { PropertyColorProvider } from "./vscode/colors.ts";
 import { ModuleCompletionProvider } from "./vscode/completion.ts";
 import { CssPropertyProvider } from "./vscode/css-providers.ts";
 import { ModuleDefinitionProvider } from "./vscode/definition.ts";
+import { GlobalClassProvider } from "./vscode/global-classes.ts";
 import { ModuleHoverProvider } from "./vscode/hover.ts";
 import { ModuleFiles } from "./vscode/module-files.ts";
 import { DocumentLoader, syncModuleFiles } from "./vscode/module-sync.ts";
@@ -35,6 +36,7 @@ export function activate(context: vscode.ExtensionContext): TestApi {
   const properties = new Properties(sources);
   const css = new CssPropertyProvider(properties);
   const tsProperties = new TsPropertyProvider(properties);
+  const globalClasses = new GlobalClassProvider(sources, files);
   context.subscriptions.push(
     files,
     sync,
@@ -65,6 +67,13 @@ export function activate(context: vscode.ExtensionContext): TestApi {
       ...TsPropertyProvider.triggerCharacters,
     ),
     vscode.languages.registerHoverProvider(SCRIPT_LANGUAGES, tsProperties),
+    vscode.languages.registerCompletionItemProvider(
+      SCRIPT_LANGUAGES,
+      globalClasses,
+      ...GlobalClassProvider.triggerCharacters,
+    ),
+    vscode.languages.registerHoverProvider(SCRIPT_LANGUAGES, globalClasses),
+    vscode.languages.registerDefinitionProvider(SCRIPT_LANGUAGES, globalClasses),
     vscode.languages.registerDefinitionProvider(SCRIPT_LANGUAGES, tsProperties),
     vscode.languages.registerDefinitionProvider(CSS, css),
     vscode.workspace.onDidCloseTextDocument((d) => files.imports.delete(d.uri.toString())),
