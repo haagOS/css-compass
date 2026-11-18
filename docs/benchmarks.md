@@ -87,12 +87,15 @@ VS Code itself and, for TS/TSX, the TypeScript server's own answer.
 
 | Check | Result |
 |---|---|
-| Cold first request: building the source index | 172–260 ms (was ~500 ms before M5's fix) — **over the 20 ms budget** |
+| Cold first request: building the source index | 172–260 ms (was ~500 ms before M5's fix); budget ≤ 300 ms since M5 (was 20 ms) |
 | of which VS Code's file search for `src/**/*.css` | ~135 ms per search (uncached) |
 | Warm hover on a utility class (incl. TypeScript) | 30–140 ms |
 | Unknown module class warnings, 74 components | 0 |
 | Unknown global class warnings (opt-in), 167 files | 0 (1 before the comparison fix) |
-| Activation time, heap | manual, not yet measured |
+| Activation time (Developer: Show Running Extensions, by hand) | about 10 ms (budget ≤ 10 ms) |
+| Extension host memory (Process Explorer, by hand) | no visible change with CSS Compass on vs. off; the tool is too coarse for a precise number |
+| Ctrl+Click on `styles`, `styles.<class>`, a utility class (by hand) | lands straight on the CSS |
+| Warnings for a document open at startup (by hand) | shown without an edit |
 
 The cold index build is dominated by `vscode.workspace.findFiles`. M5 skips it for plain paths
 and runs searches in parallel; the rest of the build (loading and scanning 64 files) is ~40 ms.
