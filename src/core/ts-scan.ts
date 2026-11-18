@@ -226,11 +226,13 @@ const INDEX_CLOSE = /^([^"'\\\n]*)(["'])\s*\]/;
 const WORD_LEFT = /[\w$]*$/;
 const WORD_RIGHT = /^[\w$]*/;
 
+export type LineContext = "code" | "string" | "comment";
+
 /**
- * True if `line[index]` is code rather than inside a string, template text or comment that
+ * What `line[index]` is: code, inside a string or template text, or inside a comment that
  * starts on this line. Comments and templates opened on earlier lines are not seen.
  */
-function isCode(line: string, index: number): boolean {
+export function lineContext(line: string, index: number): LineContext {
   let quote = 0;
   const templates: number[] = []; // brace depth inside each `${`
   let inTemplateText = false;
@@ -249,10 +251,10 @@ function isCode(line: string, index: number): boolean {
       }
     } else if (c === 34 || c === 39) quote = c;
     else if (c === 96) inTemplateText = true;
-    else if (c === 47 && line.charCodeAt(i + 1) === 47) return false;
+    else if (c === 47 && line.charCodeAt(i + 1) === 47) return "comment";
     else if (c === 47 && line.charCodeAt(i + 1) === 42) {
       const close = line.indexOf("*/", i + 2);
-      if (close < 0 || close + 2 > index) return false;
+      if (close < 0 || close + 2 > index) return "comment";
       i = close + 1;
     } else if (templates.length > 0) {
       const top = templates.length - 1;
@@ -265,7 +267,15 @@ function isCode(line: string, index: number): boolean {
       }
     }
   }
-  return quote === 0 && !inTemplateText;
+  return quote === 0 && !inTemplateText ? "code" : "string";
+}
+
+const isCode = (line: string, index: number) => lineContext(line, index) === "code";
+
+/** The context of `offset` in `text`, judged on its line (see `lineContext`). */
+export function contextAt(text: string, offset: number): LineContext {
+  const start = text.lastIndexOf("\n", offset - 1) + 1;
+  return lineContext(text.slice(start, offset), offset - start);
 }
 
 function lineAround(
