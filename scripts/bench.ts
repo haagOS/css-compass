@@ -1,6 +1,13 @@
 // Benchmarks for the pure core (SPEC §8). Prints median and p95 per case; budgets are checked by
 // reading the output and recorded in docs/benchmarks.md.
-import { generateStylesheet, minify } from "../src/core/bench-input.ts";
+import {
+  generateComponent,
+  generateModule,
+  generateStylesheet,
+  minify,
+} from "../src/core/bench-input.ts";
+import { moduleExports } from "../src/core/module-classes.ts";
+import { completionSiteAt, ImportCache, usageAt } from "../src/core/ts-scan.ts";
 import { scanCss } from "../src/core/scan.ts";
 import { SymbolIndex } from "../src/core/symbol-index.ts";
 
@@ -42,3 +49,63 @@ measure("index: completion name lists (21 files)", () => [
   ...index.propertyNames(),
 ]);
 measure("index: find property in 21 files", () => index.findProperty("--ds-color-3"));
+
+// Module class providers (§8 warm budget, owned by M2): the work after a keystroke in a TSX file
+// once the CSS file is cached: header check, usage at the cursor, export lookup.
+const component = generateComponent(1_000, 20);
+const edited = component.replace("Row 0:", "Row 0!");
+const moduleSymbols = scanCss(generateModule(40), { module: true });
+const imports = new ImportCache();
+const cursor = component.lastIndexOf(".card") + 3;
+const indexCursor = component.lastIndexOf('["title-') + 4;
+const memberSite = component.lastIndexOf(".card") + 1;
+let flip = false;
+const keystroke = () => {
+  flip = !flip;
+  return flip ? component : edited;
+};
+console.log(
+  `component: ${component.split(String.fromCharCode(10)).length} lines, ${component.length} chars, 20 imports`,
+);
+// The cases below must measure real hits, not the cheap "nothing here" path.
+for (const [name, offset] of [
+  ["member", cursor],
+  ["index", indexCursor],
+] as const) {
+  const usage = usageAt(component, offset, imports.get("doc", component));
+  const hit =
+    usage?.kind === "member" && moduleExports(moduleSymbols, "asIs").byName.has(usage.name);
+  if (!hit) throw new Error(`bench input broken: no ${name} usage with a class at the cursor`);
+}
+if (completionSiteAt(component, memberSite, imports.get("doc", component))?.kind !== "member") {
+  throw new Error("bench input broken: no completion site at the cursor");
+}
+measure(
+  "definition/hover: usage + lookup",
+  () => {
+    const text = keystroke();
+    const usage = usageAt(text, cursor, imports.get("doc", text));
+    if (usage?.kind === "member") moduleExports(moduleSymbols, "asIs").byName.get(usage.name);
+  },
+  1,
+);
+measure(
+  "definition: quoted index usage + lookup",
+  () => {
+    const text = keystroke();
+    const usage = usageAt(text, indexCursor, imports.get("doc", text));
+    if (usage?.kind === "member") moduleExports(moduleSymbols, "asIs").byName.get(usage.name);
+  },
+  1,
+);
+measure(
+  "completion: site + names",
+  () => {
+    const text = keystroke();
+    if (completionSiteAt(text, memberSite, imports.get("doc", text))) {
+      void moduleExports(moduleSymbols, "camelCase").completionNames.length;
+    }
+  },
+  1,
+);
+measure("import header parse (cold)", () => new ImportCache().get("doc", component));

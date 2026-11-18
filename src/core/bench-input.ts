@@ -61,3 +61,32 @@ export function minify(css: string): string {
     .replace(/\s+/g, " ")
     .replace(/\s*([{};,>])\s*/g, "$1");
 }
+
+/** A TSX component of about `lines` lines importing `imports` CSS Modules. */
+export function generateComponent(lines: number, imports: number): string {
+  const out: string[] = ['"use client";', 'import { useState } from "react";'];
+  for (let i = 0; i < imports; i++) out.push(`import s${i} from "./part-${i}.module.css";`);
+  out.push("", "export function Component() {", "  const [open, setOpen] = useState(false);");
+  for (let i = 0; out.length < lines - 3; i++) {
+    const s = `s${i % imports}`;
+    out.push(
+      `  const row${i} = (`,
+      `    <div className={${s}.card${i % 40}} data-open={open}>`,
+      `      <span className={${s}["title-${i % 40}"]}>Row ${i}: don't panic</span>`,
+      "    </div>",
+      "  );",
+    );
+  }
+  out.push("  return null;", "}", "");
+  return out.join("\n");
+}
+
+/** A CSS Module with `count` classes, some of them with dashes. */
+export function generateModule(count: number): string {
+  const out: string[] = [];
+  for (let i = 0; i < count; i++) {
+    out.push(`.card${i} {`, "  display: grid;", `  gap: ${i}px;`, "}");
+    out.push(`.title-${i} {`, "  font-weight: 600;", "}");
+  }
+  return out.join("\n");
+}

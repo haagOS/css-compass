@@ -100,9 +100,21 @@ rules, class names and custom properties, each with an exact range.
 
 Import detection:
 - **R-MC-1 MUST** detect `import styles from "<spec>.module.css"` and
-  `import * as styles from "<spec>.module.css"`.
+  `import * as styles from "<spec>.module.css"`. Imports are read from the file header only
+  (imports, comments, directives such as `"use client"`) and cached by the header text.
 - **R-MC-2 MUST** resolve relative specifiers.
-- **R-MC-3 SHOULD** resolve tsconfig `paths` and bare package specifiers.
+- **R-MC-3 SHOULD** resolve tsconfig `paths` and bare package specifiers. Moved to a separate
+  item after M4 (it needs its own design: tsconfig `extends` chains, package `exports`).
+
+Usage detection is line-local: `styles`, `styles.x`, `styles?.x`, `styles["x"]` on the
+current line, outside strings, template text and comments that start on that line. A binding
+right after a `.` (`props.styles.x`) is not a CSS Module usage. There is no scope analysis.
+
+CSS Module files live in one cache for the window, keyed by normalised file system path. They
+don't feed the global class/property index (§5.2, §5.3), which is built from `sources` only.
+An open CSS document is read from the editor, so unsaved edits win; other files are read from
+disk. Only cached files are refreshed: on edit, open and close of their document, and through a
+watcher on `**/*.module.css` (plus one per cached file outside the workspace).
 
 Features:
 
@@ -111,7 +123,7 @@ Features:
 | R-MC-4 | MUST | **Go to definition** on the binding `styles` opens the CSS file (line 1). |
 | R-MC-5 | MUST | **Go to definition** on `styles.shell` / `styles["shell"]` jumps to the exact class name in its rule. Multiple rules for the same class are all returned. |
 | R-MC-6 | MUST | Ctrl+Click on `styles.shell` lands **directly** on the rule, with no peek list caused by TypeScript's own result for `vite/client`'s `declare module "*.module.css"` (see §10, risk 1). Achieved through R-CFG-5. |
-| R-MC-7 | MUST | **Completion** after `styles.` and inside `styles["…"]` lists only that file's local classes. Each entry shows a short preview of the declarations. Names with a `-` are inserted as `["a-b"]` if `localsConvention` doesn't convert them. |
+| R-MC-7 | MUST | **Completion** after `styles.` and inside `styles["…"]` lists only that file's local classes. Each entry shows a short preview of the declarations (first 5, built when the item is resolved). Names that aren't JS identifiers are inserted as `["a-b"]`. Under `camelCase` / `dashes`, such an original is only offered as its alias; both names resolve. |
 | R-MC-8 | MUST | **Hover** on `styles.shell` shows the rule(s) as a CSS code block, plus `file:line` and the at-rule context. |
 | R-MC-9 | MUST | `localsConvention` (§7) maps CSS names to JS names the same way as Vite and css-loader: `asIs`, `camelCase`, `camelCaseOnly`, `dashes`, `dashesOnly`. |
 | R-MC-10 | SHOULD | **Diagnostic** (warning) for `styles.x` when `.x` doesn't exist in the imported file. Can be turned off. |
@@ -302,7 +314,8 @@ the repo.
 |---|---|
 | M0 | Scaffold (build, test, package, install) + **spike for risk 1** — done |
 | M1 | CSS scanner + index + cache + benchmarks (§4, §8) — done |
-| M2 | Module classes in TS/TSX (§5.1) |
+| M2 | Module classes in TS/TSX (§5.1) — done (R-MC-3 moved, R-MC-10 in M5) |
 | M3 | Custom properties: CSS, TS strings, value resolution, colours (§5.3, §5.4, §5.5, §6) |
 | M4 | Global classes (§5.2, R-CSS-4) |
-| M5 | Diagnostics, `composes`, acceptance run on the reference project, `v0.1.0` `.vsix` |
+| M5 | Diagnostics (R-MC-10, R-GC-7), `composes`, acceptance run on the reference project, `v0.1.0` `.vsix` |
+| — | R-MC-3: tsconfig `paths` and bare specifiers for CSS Module imports (after M4) |

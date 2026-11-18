@@ -21,3 +21,20 @@ Windows 11, Node 24.18. Input: 10,005 lines, 291,836 chars (minified 231,365); 2
 
 The first run measured 16 ms per scan: escape detection searched to the end of the file for
 every identifier (quadratic). Fixed before commit.
+
+## M2 — 2026-11-18
+
+Windows 11, Node 24.18. Module class providers, measured on the pure core after a keystroke in
+a generated 1,003-line TSX component (30,234 chars, 20 CSS Module imports, JSX text with
+apostrophes), with the CSS file already cached. Each iteration alternates between two texts
+that differ in the body, so the import header is compared, not reused by identity. Not
+included: VS Code's own `document.getText()` and IPC.
+
+| Case | Median | p95 | Budget |
+|---|---|---|---|
+| definition/hover: `styles.x` usage + lookup | 0.006 ms | 0.006 ms | ≤ 1 ms |
+| definition: `styles["x"]` usage + lookup | 0.006 ms | 0.006 ms | ≤ 1 ms |
+| completion: site + names (camelCase) | 0.006 ms | 0.006 ms | ≤ 1 ms |
+| import header parse, cold | 0.007 ms | 0.008 ms | — |
+
+Scan numbers from M1 re-measured: 1.40 ms median for 10k lines (budget 3 ms).
