@@ -89,3 +89,63 @@ suite("unknown CSS Module class warnings", () => {
     await waitForWarnings(["missing", "nope", "titleMain"], "the warnings to return");
   });
 });
+
+suite("unknown global class warnings", () => {
+  let doc: vscode.TextDocument;
+
+  const warnings = (): string[] =>
+    vscode.languages
+      .getDiagnostics(doc.uri)
+      .filter((d) => d.code === "unknown-global-class")
+      .toSorted((a, b) => a.range.start.compareTo(b.range.start))
+      .map((d) => doc.getText(d.range));
+
+  const waitForWarnings = (expected: string[], what: string) =>
+    waitFor(
+      what,
+      () => (JSON.stringify(warnings()) === JSON.stringify(expected) ? true : undefined),
+      15_000,
+    ).catch((error: unknown) => {
+      assert.deepEqual(warnings(), expected, String(error));
+    });
+
+  suiteSetup(async () => {
+    await activateExtension();
+    doc = await vscode.workspace.openTextDocument(fixture("global-diagnostics.tsx"));
+  });
+
+  test("off by default", async () => {
+    // Give a check the time to run; nothing may appear.
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
+    assert.deepEqual(warnings(), []);
+  });
+
+  test("when on, unknown names in class contexts are flagged; dynamic templates and other strings are not", async () => {
+    await config().update(
+      "diagnostics.unknownGlobalClass",
+      true,
+      vscode.ConfigurationTarget.Global,
+    );
+    try {
+      await waitForWarnings(["typo-class", "nope-key"], "the global class warnings");
+
+      // No sources found: nothing is flagged rather than everything.
+      await config().update("sources", ["no-such-dir/**/*.css"], vscode.ConfigurationTarget.Global);
+      try {
+        await waitForWarnings([], "the warnings to clear without sources");
+        await new Promise((resolve) => setTimeout(resolve, 1_000));
+        assert.deepEqual(warnings(), []);
+      } finally {
+        await config().update("sources", undefined, vscode.ConfigurationTarget.Global);
+      }
+      await waitForWarnings(["typo-class", "nope-key"], "the warnings to return with sources");
+    } finally {
+      await config().update(
+        "diagnostics.unknownGlobalClass",
+        undefined,
+        vscode.ConfigurationTarget.Global,
+      );
+    }
+    await waitForWarnings([], "the warnings to clear when off");
+  });
+});

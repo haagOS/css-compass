@@ -13,9 +13,12 @@ export function debugTimings(): boolean {
   return vscode.workspace.getConfiguration(SECTION).get<boolean>("debug.timings") ?? false;
 }
 
-export type DiagnosticKind = "unknownModuleClass";
+export type DiagnosticKind = "unknownModuleClass" | "unknownGlobalClass";
 
-const DIAGNOSTIC_DEFAULTS: Record<DiagnosticKind, boolean> = { unknownModuleClass: true };
+const DIAGNOSTIC_DEFAULTS: Record<DiagnosticKind, boolean> = {
+  unknownModuleClass: true,
+  unknownGlobalClass: false,
+};
 
 export function diagnosticEnabled(scope: vscode.Uri, kind: DiagnosticKind): boolean {
   const value = vscode.workspace

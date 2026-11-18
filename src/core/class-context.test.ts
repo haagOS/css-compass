@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { classTokenAt } from "./class-context.ts";
+import { classNamesIn, classTokenAt } from "./class-context.ts";
 import { parseImports } from "./ts-scan.ts";
 
 const FUNCTIONS = ["clsx", "cn", "cx", "classnames"];
@@ -125,5 +125,60 @@ describe("not a class context", () => {
     expect(token(`clsx(\n${lines.split("\n").slice(0, 10).join("\n")}\n  "a|",\n)`)).toBe(
       'a [a] "a"',
     );
+  });
+});
+
+/** Every class name found by `classNamesIn`, marked if its range doesn't match. */
+const all = (body: string) => {
+  const text = HEAD + body;
+  return classNamesIn(text, FUNCTIONS, parseImports(text)).map(
+    (n) => `${n.name}${text.slice(n.start, n.end) === n.name ? "" : " (range!)"}`,
+  );
+};
+
+describe("classNamesIn", () => {
+  test("names in attributes, class functions, conditionals, arrays and keys", () => {
+    expect(
+      all(
+        [
+          "<div className=\"a  b\" class='c'>",
+          '  <p className={open ? "d" : `e f`} />',
+          '  <p className={clsx("g", open && "h", ["i"], { "j k": open, hidden: open })} />',
+          "  <p className={cn(",
+          '    "l",',
+          '    { "m": open },',
+          "  )} />",
+          "</div>",
+        ].join("\n"),
+      ),
+    ).toEqual(["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m"]);
+  });
+
+  test("other strings, CSS Module access, dynamic templates and JSX text are skipped", () => {
+    expect(
+      all(
+        [
+          'const label = "not-a-class";',
+          'const x = styles["shell"] + other("q");',
+          '<p title="t" className={clsx({ x: "value" })}>Don\'t "touch" this</p>;',
+          "<p className={`btn-${size} fixed`} />;",
+          '// <p className="in-comment" />',
+          '/* className="in-block" */ <p className="after-block" />;',
+          "<p className={`multi",
+          'line`} data-x="y" />;',
+        ].join("\n"),
+      ),
+    ).toEqual(["after-block"]);
+  });
+
+  test("every name found is the token classTokenAt sees there", () => {
+    const text = `${HEAD}<p className={clsx("a b", { "c": x }, cond ? "d" : "")} />\n`;
+    const imports = parseImports(text);
+    const names = classNamesIn(text, FUNCTIONS, imports);
+    expect(names).toHaveLength(4);
+    for (const n of names) {
+      const t = classTokenAt(text, n.start + 1, FUNCTIONS, imports);
+      expect(t && [t.name, t.start, t.end]).toEqual([n.name, n.start, n.end]);
+    }
   });
 });

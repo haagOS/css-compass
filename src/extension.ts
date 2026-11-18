@@ -44,7 +44,7 @@ export function activate(context: vscode.ExtensionContext): TestApi {
     files,
     sync,
     sources,
-    new Diagnostics(files),
+    new Diagnostics(files, sources),
     vscode.languages.registerDefinitionProvider(
       SCRIPT_LANGUAGES,
       new ModuleDefinitionProvider(files),

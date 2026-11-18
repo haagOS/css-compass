@@ -75,3 +75,4 @@ Module imports, 390 member and index usages), every module cached. Pure core.
 | Case | Median | p95 | Budget |
 |---|---|---|---|
 | unknown module classes: full check of the file | 0.161 ms | 0.175 ms | ≤ 1 ms |
+| unknown global classes: full check of the M4 class component (496 names, 400-class index) | 2.20 ms | 2.94 ms | ≤ 5 ms |

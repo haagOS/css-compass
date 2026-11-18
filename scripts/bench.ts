@@ -8,7 +8,7 @@ import {
   generateUtilities,
   minify,
 } from "../src/core/bench-input.ts";
-import { classTokenAt } from "../src/core/class-context.ts";
+import { classNamesIn, classTokenAt } from "../src/core/class-context.ts";
 import { colorUsages } from "../src/core/color-usages.ts";
 import { parseColor } from "../src/core/color.ts";
 import { moduleExports } from "../src/core/module-classes.ts";
@@ -230,4 +230,26 @@ measure(
     return unknown;
   },
   1,
+);
+
+// Diagnostics, global classes (R-GC-7, off by default): every class-context string of the
+// 1,000-line class component, each name looked up in the 400-class index.
+const classNamesFound = classNamesIn(classComponent, functions, classImports);
+if (
+  classNamesFound.length < 300 ||
+  classNamesFound.some((n) => utilities.findClass(n.name).length === 0)
+) {
+  throw new Error(`bench input broken: ${classNamesFound.length} class names, or unknown ones`);
+}
+console.log(`diagnostics: ${classNamesFound.length} class names in the class component`);
+measure(
+  "unknown global classes: full check",
+  () => {
+    let unknown = 0;
+    for (const n of classNamesIn(classComponent, functions, classImports)) {
+      if (utilities.findClass(n.name).length === 0) unknown++;
+    }
+    return unknown;
+  },
+  5,
 );

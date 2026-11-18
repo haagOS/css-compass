@@ -30,6 +30,7 @@ the value to `"peek"` in your settings, for example only for TypeScript React:
 |---|---|---|
 | `cssCompass.localsConvention` | `asIs` | Same value as `css.modules.localsConvention` in your Vite config. |
 | `cssCompass.diagnostics.unknownModuleClass` | `true` | Warn about `styles.x` when `.x` doesn't exist in the imported `.module.css` file. No scope analysis: a local variable that shadows `styles` is checked too. |
+| `cssCompass.diagnostics.unknownGlobalClass` | `false` | Warn about names in `className` strings and class functions that no CSS source defines. Classes from CSS outside the sources are flagged too, hence off by default. |
 | `cssCompass.debug.timings` | `false` | Log how long each request takes to the "CSS Compass" output channel. |
 
 ## Development

@@ -49,10 +49,17 @@ export class SourceStore implements vscode.Disposable {
   readonly store: CssStore;
   readonly folder: vscode.WorkspaceFolder;
   private readonly disposables: vscode.Disposable[] = [];
+  private readonly changed: () => void;
 
-  constructor(folder: vscode.WorkspaceFolder, loader: DocumentLoader) {
+  /** `changed` is called after a file of the store may have changed. */
+  constructor(folder: vscode.WorkspaceFolder, loader: DocumentLoader, changed: () => void) {
     this.folder = folder;
     this.store = new CssStore(loader);
+    this.changed = changed;
+  }
+
+  private refresh(file: string): void {
+    void this.store.refresh(file).then(this.changed, this.changed);
   }
 
   /** Resolves the entries, loads every file and starts watching. */
@@ -91,12 +98,12 @@ export class SourceStore implements vscode.Disposable {
 
   /** Refreshes a file if this store holds it. */
   refreshIfKnown(file: string): void {
-    if (this.store.get(file)) void this.store.refresh(file);
+    if (this.store.get(file)) this.refresh(file);
   }
 
   private watch(pattern: vscode.RelativePattern): void {
     const watcher = vscode.workspace.createFileSystemWatcher(pattern);
-    const refresh = (uri: vscode.Uri) => void this.store.refresh(fileKey(uri.fsPath));
+    const refresh = (uri: vscode.Uri) => this.refresh(fileKey(uri.fsPath));
     this.disposables.push(
       watcher,
       watcher.onDidCreate(refresh),
@@ -126,6 +133,12 @@ export class SourceStores implements vscode.Disposable {
   private readonly built = new Map<string, SourceStore>();
   private readonly generations = new Map<string, number>();
   private readonly disposables: vscode.Disposable[];
+  private readonly changed = new vscode.EventEmitter<string>();
+  /**
+   * Fires with the folder URI after its index may have changed: a source file changed, or the
+   * store was dropped (settings, packages).
+   */
+  readonly onDidChange = this.changed.event;
 
   constructor(loader: DocumentLoader) {
     this.loader = loader;
@@ -179,11 +192,12 @@ export class SourceStores implements vscode.Disposable {
     this.building.delete(key);
     this.built.get(key)?.dispose();
     this.built.delete(key);
+    this.changed.fire(key);
   }
 
   private async build(folder: vscode.WorkspaceFolder, key: string): Promise<SourceStore> {
     const generation = this.generations.get(key) ?? 0;
-    const source = new SourceStore(folder, this.loader);
+    const source = new SourceStore(folder, this.loader, () => this.changed.fire(key));
     try {
       await source.build(() => this.invalidate(folder));
     } catch (error) {
@@ -202,6 +216,7 @@ export class SourceStores implements vscode.Disposable {
   }
 
   dispose(): void {
+    this.changed.dispose();
     for (const d of this.disposables) d.dispose();
     for (const source of this.built.values()) source.dispose();
     this.built.clear();

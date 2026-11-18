@@ -80,6 +80,12 @@
           "scope": "resource",
           "markdownDescription": "Warn about `styles.x` when `.x` doesn't exist in the imported `.module.css` file."
         },
+        "cssCompass.diagnostics.unknownGlobalClass": {
+          "type": "boolean",
+          "default": false,
+          "scope": "resource",
+          "markdownDescription": "Warn about class names in `className` strings and class functions that no CSS source defines. Off by default: classes from CSS outside `cssCompass.sources` are flagged too."
+        },
         "cssCompass.debug.timings": {
           "type": "boolean",
           "default": false,

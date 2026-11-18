@@ -140,6 +140,67 @@ export function classTokenAt(
   return { name, start, end: start + name.length, prefix: before, completable: false };
 }
 
+export interface ClassName {
+  readonly name: string;
+  readonly start: number;
+  readonly end: number;
+}
+
+/**
+ * Every class name in the class-context strings of a file, for diagnostics (R-GC-7). Strings are
+ * found per line, outside comments that start on the line. Strings that don't close on their
+ * line (JSX text such as `Don't`, multi-line templates) and templates with `${…}` are skipped:
+ * a missed name is fine, a wrong warning is not.
+ */
+export function classNamesIn(
+  text: string,
+  classFunctions: readonly string[],
+  imports: readonly ModuleImport[] = [],
+): ClassName[] {
+  const names: ClassName[] = [];
+  for (let lineStart = 0; lineStart <= text.length;) {
+    let lineEnd = text.indexOf("\n", lineStart);
+    if (lineEnd < 0) lineEnd = text.length;
+    for (let i = lineStart; i < lineEnd;) {
+      const c = text.charCodeAt(i);
+      if (c === 47 && text.charCodeAt(i + 1) === 47) break;
+      if (c === 47 && text.charCodeAt(i + 1) === 42) {
+        const close = text.indexOf("*/", i + 2);
+        if (close < 0 || close >= lineEnd) break;
+        i = close + 2;
+        continue;
+      }
+      if (!QUOTES.has(c)) {
+        i++;
+        continue;
+      }
+      let close = i + 1;
+      let dynamic = false;
+      while (close < lineEnd && text.charCodeAt(close) !== c) {
+        if (text.charCodeAt(close) === 92) close++;
+        else if (c === 96 && text.charCodeAt(close) === 36 && text.charCodeAt(close + 1) === 123) {
+          dynamic = true;
+        }
+        close++;
+      }
+      if (close >= lineEnd) break;
+      if (
+        !dynamic &&
+        usageAt(text, i + 1, imports)?.kind !== "member" &&
+        inClassContext(text, i, classFunctions, isKey(text, i))
+      ) {
+        for (const m of text.slice(i + 1, close).matchAll(/\S+/g)) {
+          const start = i + 1 + m.index;
+          names.push({ name: m[0], start, end: start + m[0].length });
+        }
+      }
+      i = close + 1;
+    }
+    lineStart = lineEnd + 1;
+  }
+  return names;
+}
+
 /** The string opening at `open` is an object key: after `{` or `,`, and followed by `:`. */
 function isKey(text: string, open: number): boolean {
   const quote = text.charCodeAt(open);

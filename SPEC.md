@@ -159,7 +159,7 @@ before packages, so Ctrl+Click lands on the project's own rule.
 | R-GC-4 | MUST | **Completion** of every global class from the sources, with a declaration preview and the source label (package name or relative path). |
 | R-GC-5 | MUST | **Hover** shows the rule(s) as CSS, plus `file:line` and the at-rule context (e.g. `@layer ds.utilities`). |
 | R-GC-6 | MUST | **Go to definition** jumps to the class in the source, including files in `node_modules`. |
-| R-GC-7 | COULD | Diagnostic for unknown global classes. **Off by default**, because dynamically built class names cause false positives. |
+| R-GC-7 | COULD | Diagnostic for unknown global classes. **Off by default**, because dynamically built class names and classes from CSS outside `sources` cause false positives. Checks every whitespace-separated name in class-context strings (same rules as above). Skipped: templates with `${…}`, strings that don't close on their line, identifier keys. Nothing is flagged while the folder has no global classes at all. |
 
 ### 5.3 CSS files (`.css` and `.module.css`)
 
