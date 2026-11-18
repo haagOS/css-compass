@@ -1,0 +1,8 @@
+.local {
+  --local-only: 1px;
+  color: var(--ds-accent);
+  margin: var(--local-only);
+  box-shadow: var(--ds-shadow);
+  padding: var();
+  border-color: var(--ds-ac);
+}

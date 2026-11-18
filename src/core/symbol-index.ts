@@ -14,10 +14,17 @@ export class SymbolIndex {
   private readonly files = new Map<string, CssSymbols>();
   private readonly classes = new NameTable<CssClass>();
   private readonly properties = new NameTable<CssProperty>();
+  private changes = 0;
+
+  /** Changes with every add, replace or remove, so derived data can be cached against it. */
+  get version(): number {
+    return this.changes;
+  }
 
   /** Adds a file or replaces its previous symbols. */
   setFile(file: string, symbols: CssSymbols): void {
     this.removeFile(file);
+    this.changes++;
     this.files.set(file, symbols);
     for (const c of symbols.classes) if (!c.local) this.classes.add(c.name, file, c);
     for (const p of symbols.properties) this.properties.add(p.name, file, p);
@@ -26,6 +33,7 @@ export class SymbolIndex {
   removeFile(file: string): void {
     const old = this.files.get(file);
     if (!old) return;
+    this.changes++;
     this.files.delete(file);
     for (const c of old.classes) if (!c.local) this.classes.remove(c.name, file);
     for (const p of old.properties) this.properties.remove(p.name, file);

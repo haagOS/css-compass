@@ -1,9 +1,11 @@
 import * as vscode from "vscode";
 import { ModuleCompletionProvider } from "./vscode/completion.ts";
+import { CssPropertyProvider } from "./vscode/css-providers.ts";
 import { ModuleDefinitionProvider } from "./vscode/definition.ts";
 import { ModuleHoverProvider } from "./vscode/hover.ts";
 import { ModuleFiles } from "./vscode/module-files.ts";
 import { DocumentLoader, syncModuleFiles } from "./vscode/module-sync.ts";
+import { Properties } from "./vscode/properties.ts";
 import { SourceStores } from "./vscode/sources.ts";
 import { disposeTiming } from "./vscode/timing.ts";
 
@@ -14,6 +16,8 @@ const SCRIPT_LANGUAGES: vscode.DocumentFilter[] = [
   "javascript",
   "javascriptreact",
 ].map((language) => ({ language, scheme: "file" }));
+
+const CSS: vscode.DocumentFilter = { language: "css", scheme: "file" };
 
 /** Returned from `activate` for integration tests; not a public API. */
 export interface TestApi {
@@ -26,6 +30,7 @@ export function activate(context: vscode.ExtensionContext): TestApi {
   const files = new ModuleFiles(loader);
   const sync = syncModuleFiles(files, loader); // registers first: it tracks open documents
   const sources = new SourceStores(loader);
+  const css = new CssPropertyProvider(new Properties(sources));
   context.subscriptions.push(
     files,
     sync,
@@ -40,6 +45,13 @@ export function activate(context: vscode.ExtensionContext): TestApi {
       new ModuleCompletionProvider(files),
       ...ModuleCompletionProvider.triggerCharacters,
     ),
+    vscode.languages.registerCompletionItemProvider(
+      CSS,
+      css,
+      ...CssPropertyProvider.triggerCharacters,
+    ),
+    vscode.languages.registerHoverProvider(CSS, css),
+    vscode.languages.registerDefinitionProvider(CSS, css),
     vscode.workspace.onDidCloseTextDocument((d) => files.imports.delete(d.uri.toString())),
     { dispose: disposeTiming },
   );
