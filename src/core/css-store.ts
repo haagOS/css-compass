@@ -25,8 +25,14 @@ export const isModuleFile = (file: string) => file.endsWith(".module.css");
  * Parsed CSS files of one workspace folder plus their symbol index. Keys are only checked when a
  * file is first loaded or explicitly refreshed, never per request.
  */
+export interface CssStoreOptions {
+  /** Feed global classes and custom properties into `index` (default true). */
+  readonly index?: boolean;
+}
+
 export class CssStore {
   readonly index = new SymbolIndex();
+  private readonly indexing: boolean;
   private readonly files = new Map<string, CssFile>();
   private readonly pending = new Map<string, Promise<CssFile | undefined>>();
   /** Bumped by every update/remove, so a slower reload can tell it is outdated. */
@@ -34,8 +40,9 @@ export class CssStore {
 
   private readonly loader: FileLoader;
 
-  constructor(loader: FileLoader) {
+  constructor(loader: FileLoader, options: CssStoreOptions = {}) {
     this.loader = loader;
+    this.indexing = options.index ?? true;
   }
 
   /** The cached file, without touching the disk. */
@@ -60,7 +67,7 @@ export class CssStore {
       },
     };
     this.files.set(file, entry);
-    this.index.setFile(file, symbols);
+    if (this.indexing) this.index.setFile(file, symbols);
     return entry;
   }
 
@@ -90,7 +97,7 @@ export class CssStore {
   remove(file: string): void {
     this.bump(file);
     this.files.delete(file);
-    this.index.removeFile(file);
+    if (this.indexing) this.index.removeFile(file);
   }
 
   private bump(file: string): void {

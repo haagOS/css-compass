@@ -212,3 +212,13 @@ describe("LineIndex", () => {
     expect(lines.positionAt(99)).toEqual({ line: 1, character: 2 });
   });
 });
+
+test("a store without indexing keeps files but not the global index", () => {
+  const store = new CssStore(diskLoader, { index: false });
+  store.update("x.module.css", "v1", ":global(.page) { --v: 1; }");
+  expect(store.get("x.module.css")?.symbols.classes).toHaveLength(1);
+  expect(store.index.findClass("page")).toEqual([]);
+  expect(store.index.findProperty("--v")).toEqual([]);
+  store.remove("x.module.css");
+  expect(store.get("x.module.css")).toBeUndefined();
+});
