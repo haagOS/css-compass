@@ -127,7 +127,7 @@ Features:
 | R-MC-7 | MUST | **Completion** after `styles.` and inside `styles["…"]` lists only that file's local classes. Each entry shows a short preview of the declarations (first 5, built when the item is resolved). Names that aren't JS identifiers are inserted as `["a-b"]`. Under `camelCase` / `dashes`, such an original is only offered as its alias; both names resolve. |
 | R-MC-8 | MUST | **Hover** on `styles.shell` shows the rule(s) as a CSS code block, plus `file:line` and the at-rule context. |
 | R-MC-9 | MUST | `localsConvention` (§7) maps CSS names to JS names the same way as Vite and css-loader: `asIs`, `camelCase`, `camelCaseOnly`, `dashes`, `dashesOnly`. |
-| R-MC-10 | SHOULD | **Diagnostic** (warning) for `styles.x` when `.x` doesn't exist in the imported file. Can be turned off. |
+| R-MC-10 | SHOULD | **Diagnostic** (warning) for `styles.x`, `styles?.x` and `styles["x"]` when `.x` doesn't exist in the imported file (under `localsConvention`). Same usage rules as above, applied to every line. A file that can't be found or read gives no warnings. Can be turned off. |
 | R-MC-11 | COULD | Hover on `styles` lists the file path and its number of classes. |
 
 ### 5.2 Global classes in TS / TSX / JS / JSX
@@ -278,7 +278,10 @@ How the budgets are met:
 - **R-PERF-1 MUST** activate only through `onLanguage` (css, typescript, typescriptreact,
   javascript, javascriptreact). There is no `*` and no work at startup.
 - **R-PERF-2 MUST** index lazily: nothing is scanned until the first request that needs it.
-  There is never a workspace-wide crawl of every TS file.
+  There is never a workspace-wide crawl of every TS file. A diagnostics check counts as a
+  request. It runs only for open TS/JS documents: 300 ms after one opens or changes, when a CSS
+  file it imports changes, and when settings change. Documents open at activation are checked
+  after the same delay, never during activation.
 - **R-PERF-3 MUST** cache the parse of each file, keyed by document version (open files) or
   `mtimeMs:size` (closed files). Keys are checked when a file is first loaded or invalidated,
   never per request. A FileSystemWatcher on the sources invalidates the cache, which also

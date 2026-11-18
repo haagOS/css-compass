@@ -13,6 +13,12 @@ export class ModuleFiles {
   private readonly loaded = new vscode.EventEmitter<string>();
   /** Fires with the file key when a file is cached for the first time. */
   readonly onDidLoad = this.loaded.event;
+  private readonly changed = new vscode.EventEmitter<string>();
+  /**
+   * Fires with the file key after a CSS file may have changed: edited, saved, created or
+   * deleted. Fires for files that aren't cached too, so a dependant can notice a new file.
+   */
+  readonly onDidChange = this.changed.event;
 
   constructor(loader: FileLoader) {
     this.store = new CssStore(loader, { index: false });
@@ -38,8 +44,16 @@ export class ModuleFiles {
     return loaded;
   }
 
+  /** Refreshes `file` if it is cached, then fires `onDidChange`. */
+  refresh(file: string): void {
+    const fire = () => this.changed.fire(file);
+    if (this.store.get(file)) void this.store.refresh(file).then(fire, fire);
+    else fire();
+  }
+
   dispose(): void {
     this.loaded.dispose();
+    this.changed.dispose();
   }
 }
 

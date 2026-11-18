@@ -49,13 +49,12 @@ const isCssFile = (document: vscode.TextDocument) =>
  * opening an unrelated CSS file loads nothing.
  */
 export function syncModuleFiles(files: ModuleFiles, loader: DocumentLoader): vscode.Disposable {
-  const { store } = files;
-  const refreshIfCached = (file: string | undefined) => {
-    if (file !== undefined && store.get(file)) void store.refresh(file);
+  const refresh = (file: string | undefined) => {
+    if (file !== undefined) files.refresh(file);
   };
   const fromDisk = (uri: vscode.Uri) => {
     const file = fileKey(uri.fsPath);
-    if (!loader.isOpen(file)) refreshIfCached(file);
+    if (!loader.isOpen(file)) refresh(file);
   };
 
   // Files outside the workspace folders get a watcher of their own once they are cached.
@@ -80,10 +79,10 @@ export function syncModuleFiles(files: ModuleFiles, loader: DocumentLoader): vsc
     watcher.onDidChange(fromDisk),
     watcher.onDidCreate(fromDisk),
     watcher.onDidDelete(fromDisk),
-    vscode.workspace.onDidOpenTextDocument((d) => refreshIfCached(loader.track(d))),
-    vscode.workspace.onDidCloseTextDocument((d) => refreshIfCached(loader.untrack(d))),
+    vscode.workspace.onDidOpenTextDocument((d) => refresh(loader.track(d))),
+    vscode.workspace.onDidCloseTextDocument((d) => refresh(loader.untrack(d))),
     vscode.workspace.onDidChangeTextDocument((e) =>
-      refreshIfCached(isCssFile(e.document) ? fileKey(e.document.uri.fsPath) : undefined),
+      refresh(isCssFile(e.document) ? fileKey(e.document.uri.fsPath) : undefined),
     ),
     files.onDidLoad(watchOutside),
   ];

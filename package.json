@@ -74,6 +74,12 @@
           "scope": "resource",
           "markdownDescription": "How CSS Module class names map to JS names. Use the same value as `css.modules.localsConvention` in your Vite config."
         },
+        "cssCompass.diagnostics.unknownModuleClass": {
+          "type": "boolean",
+          "default": true,
+          "scope": "resource",
+          "markdownDescription": "Warn about `styles.x` when `.x` doesn't exist in the imported `.module.css` file."
+        },
         "cssCompass.debug.timings": {
           "type": "boolean",
           "default": false,

@@ -12,6 +12,7 @@ import { classTokenAt } from "../src/core/class-context.ts";
 import { colorUsages } from "../src/core/color-usages.ts";
 import { parseColor } from "../src/core/color.ts";
 import { moduleExports } from "../src/core/module-classes.ts";
+import { memberUsages } from "../src/core/module-usages.ts";
 import { byPreference, resolveValue } from "../src/core/resolve.ts";
 import { completionSiteAt, ImportCache, parseImports, usageAt } from "../src/core/ts-scan.ts";
 import { scanCss } from "../src/core/scan.ts";
@@ -204,6 +205,29 @@ measure(
       if (defs.filter((d) => !d.file.includes("node_modules")).concat(defs)[0]) n++;
     }
     return n;
+  },
+  1,
+);
+
+// Diagnostics (owned by M5): a full check of the 1,000-line component after an edit, with every
+// CSS Module cached: imports, every member usage, export lookup.
+const usagesFound = memberUsages(component, imports.get("doc", component));
+const unknownFound = usagesFound.filter(
+  (u) => !moduleExports(moduleSymbols, "asIs").byName.has(u.name),
+).length;
+if (usagesFound.length < 300 || unknownFound !== 0) {
+  throw new Error(`bench input broken: ${usagesFound.length} usages, ${unknownFound} unknown`);
+}
+console.log(`diagnostics: ${usagesFound.length} usages in the component`);
+measure(
+  "unknown module classes: full check",
+  () => {
+    const text = keystroke();
+    let unknown = 0;
+    for (const u of memberUsages(text, imports.get("doc", text))) {
+      if (!moduleExports(moduleSymbols, "asIs").byName.has(u.name)) unknown++;
+    }
+    return unknown;
   },
   1,
 );

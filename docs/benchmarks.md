@@ -66,3 +66,12 @@ apostrophes), and 400 utility classes in one stylesheet. Pure core.
 | class context in a multi-line `clsx(` + lookup | 0.003 ms | 0.003 ms | ≤ 1 ms |
 | class context in a `className` attribute + lookup | 0.002 ms | 0.002 ms | ≤ 1 ms |
 | completion list, 400 classes with their first definition | 0.110 ms | 0.116 ms | ≤ 1 ms |
+
+## M5 — 2026-11-18
+
+Windows 11, Node 24.18. Diagnostics: the same generated 1,000-line component as M2 (20 CSS
+Module imports, 390 member and index usages), every module cached. Pure core.
+
+| Case | Median | p95 | Budget |
+|---|---|---|---|
+| unknown module classes: full check of the file | 0.161 ms | 0.175 ms | ≤ 1 ms |

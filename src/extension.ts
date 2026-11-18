@@ -4,6 +4,7 @@ import { CssGlobalClassProvider } from "./vscode/css-global-classes.ts";
 import { ModuleCompletionProvider } from "./vscode/completion.ts";
 import { CssPropertyProvider } from "./vscode/css-providers.ts";
 import { ModuleDefinitionProvider } from "./vscode/definition.ts";
+import { Diagnostics } from "./vscode/diagnostics.ts";
 import { GlobalClassProvider } from "./vscode/global-classes.ts";
 import { ModuleHoverProvider } from "./vscode/hover.ts";
 import { ModuleFiles } from "./vscode/module-files.ts";
@@ -43,6 +44,7 @@ export function activate(context: vscode.ExtensionContext): TestApi {
     files,
     sync,
     sources,
+    new Diagnostics(files),
     vscode.languages.registerDefinitionProvider(
       SCRIPT_LANGUAGES,
       new ModuleDefinitionProvider(files),

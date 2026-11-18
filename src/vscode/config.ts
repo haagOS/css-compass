@@ -13,6 +13,17 @@ export function debugTimings(): boolean {
   return vscode.workspace.getConfiguration(SECTION).get<boolean>("debug.timings") ?? false;
 }
 
+export type DiagnosticKind = "unknownModuleClass";
+
+const DIAGNOSTIC_DEFAULTS: Record<DiagnosticKind, boolean> = { unknownModuleClass: true };
+
+export function diagnosticEnabled(scope: vscode.Uri, kind: DiagnosticKind): boolean {
+  const value = vscode.workspace
+    .getConfiguration(SECTION, scope)
+    .get<unknown>(`diagnostics.${kind}`);
+  return typeof value === "boolean" ? value : DIAGNOSTIC_DEFAULTS[kind];
+}
+
 const DEFAULT_CLASS_FUNCTIONS = ["clsx", "cn", "cx", "classnames"];
 
 /** Functions whose arguments are class contexts (§5.2). */
