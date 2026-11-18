@@ -121,10 +121,12 @@ class Scanner {
   private readonly stack: Frame[] = [ROOT];
   private readonly scopes = new Map<number, { scope: string; parts: readonly string[] }>();
 
-  constructor(
-    private readonly text: string,
-    private readonly module: boolean,
-  ) {
+  private readonly text: string;
+  private readonly module: boolean;
+
+  constructor(text: string, module: boolean) {
+    this.text = text;
+    this.module = module;
     this.len = text.length;
   }
 
@@ -487,8 +489,9 @@ function escapeEnd(text: string, i: number): number {
 
 /** Identifier text with CSS escapes resolved. */
 export function decodeIdent(text: string, start: number, end: number): string {
-  const firstEscape = text.indexOf("\\", start);
-  if (firstEscape < 0 || firstEscape >= end) return text.slice(start, end);
+  let escaped = false;
+  for (let k = start; k < end && !escaped; k++) escaped = text.charCodeAt(k) === C.backslash;
+  if (!escaped) return text.slice(start, end);
   let out = "";
   let i = start;
   while (i < end) {

@@ -67,7 +67,9 @@ rules, class names and custom properties, each with an exact range.
   them are never reported.
 - **R-SC-2 MUST** collect every `.class` token in a selector list, including compound and
   complex selectors (`.a.b`, `.a > .b`, `.a:hover`, `.a::before`), with the exact range of
-  the class name (without the dot).
+  the class name (without the dot). A class is `.` followed by a CSS identifier start (CSS
+  Syntax §4.3.9), so `.5` and `50.5%` are not classes. Escapes are decoded (`.md\:flex` is
+  the class `md:flex`, the range stays on the raw text). `@keyframes` selectors yield none.
 - **R-SC-3 MUST** handle the scoping rules of CSS Modules:
   - `:global(.x)` is global, `:local(.x)` is local
   - a bare `:global` / `:local` switches the mode for the rest of the selector
@@ -75,12 +77,18 @@ rules, class names and custom properties, each with an exact range.
 - **R-SC-4 MUST** look inside at-rules that contain rules (`@media`, `@supports`, `@layer`,
   `@container`) and record the enclosing at-rule chain (e.g. `@layer ds.utilities`).
 - **R-SC-5 MUST** handle native CSS nesting (`.a { .b {} }`, `& .b`) for class collection.
-  `&` concatenation (`&-suffix`) is SCSS-only and isn't supported in plain CSS.
+  `&` concatenation (`&-suffix`) is SCSS-only and isn't supported in plain CSS. Inside a
+  block, a statement is a nested rule if `{` comes before `;` or `}` (outside strings and
+  parentheses), otherwise a declaration; `--name:` is always a declaration.
 - **R-SC-6 MUST** collect `--name: value` declarations with:
   - the range of the name
   - the raw value
-  - the enclosing selector (`:root`, `.theme-contrast`, …), which is the property's scope
-- **R-SC-7 MUST** record a class rule's declaration block. Hover shows it.
+  - the enclosing selector (`:root`, `.theme-contrast`, …), which is the property's scope,
+    plus its parts if it is a list (`:root, .theme-default`). Nested `&` scopes are resolved
+    in M3.
+  - a value that ends at `;` or `}` only outside strings, `url()` and parentheses
+- **R-SC-7 MUST** record each rule's selector and block range. Hover slices and parses the
+  declarations from the cached file text when it needs them.
 - **R-SC-8 MUST** tolerate invalid or partial CSS while the user is typing: no throw, and as
   many symbols as possible are still recovered.
 - **R-SC-9 SHOULD** parse `composes: a b from "./x.module.css"` and `composes: a from global`
@@ -196,15 +204,16 @@ Contributed editor default:
 ## 8. Performance and footprint
 
 These budgets are requirements. Each has a way of measuring it, and the first column says
-where it is checked.
+where it is checked. Benchmarks vary between machines, so they don't fail the build: they are
+run at the end of each milestone and the numbers are recorded in `docs/benchmarks.md`.
 
 | Check | Metric | Budget | How it is measured |
 |---|---|---|---|
-| CI | Bundle size (`dist/extension.cjs`, minified) | ≤ 50 KB | `pnpm check:size`, also run by `pnpm package` |
-| CI | Runtime dependencies | 0 | `package.json` `dependencies` is empty |
+| Script | Bundle size (`dist/extension.cjs`, minified) | ≤ 50 KB | `pnpm check:size`, also run by `pnpm package` |
+| Script | Runtime dependencies | 0 | `package.json` `dependencies` is empty |
 | Manual | Activation time | ≤ 10 ms | *Developer: Show Running Extensions* |
-| Bench | Scan of a 10k-line CSS file | ≤ 3 ms (median) | `vitest bench` |
-| Bench | Definition / hover / completion, warm | ≤ 1 ms | `vitest bench` on the providers' pure core |
+| Bench | Scan of a 10k-line CSS file (generated, also minified) | ≤ 3 ms (median) | `pnpm bench` |
+| Bench | Definition / hover / completion, warm | ≤ 1 ms | `pnpm bench` on the providers' pure core; owned by M2 (module classes), M3 (properties), M4 (global classes) |
 | Bench | Cold first request (package sources indexed lazily) | ≤ 20 ms on the reference project | `debug.timings` |
 | Manual | Extension heap after using every feature on the reference project | ≤ 10 MB above baseline | heap snapshot from the extension host |
 
@@ -214,8 +223,9 @@ How the budgets are met:
 - **R-PERF-2 MUST** index lazily: nothing is scanned until the first request that needs it.
   There is never a workspace-wide crawl of every TS file.
 - **R-PERF-3 MUST** cache the parse of each file, keyed by document version (open files) or
-  mtime (closed files). A FileSystemWatcher on the sources invalidates the cache, which also
-  covers a `node_modules` update after `npm i`.
+  `mtimeMs:size` (closed files). Keys are checked when a file is first loaded or invalidated,
+  never per request. A FileSystemWatcher on the sources invalidates the cache, which also
+  covers a `node_modules` update after `npm i` (wired in M2).
 - **R-PERF-4 MUST** detect usage sites in TS/TSX with a local scan around the cursor plus a
   cached scan of the import header. There is no full TypeScript AST and no TypeScript
   compiler dependency.
@@ -291,7 +301,7 @@ the repo.
 | # | Content |
 |---|---|
 | M0 | Scaffold (build, test, package, install) + **spike for risk 1** — done |
-| M1 | CSS scanner + index + cache + benchmarks (§4, §8) |
+| M1 | CSS scanner + index + cache + benchmarks (§4, §8) — done |
 | M2 | Module classes in TS/TSX (§5.1) |
 | M3 | Custom properties: CSS, TS strings, value resolution, colours (§5.3, §5.4, §5.5, §6) |
 | M4 | Global classes (§5.2, R-CSS-4) |

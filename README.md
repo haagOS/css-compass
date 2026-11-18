@@ -19,6 +19,12 @@ Integration tests run in a downloaded VS Code (pinned in `.vscode-test.mjs`). Se
 pnpm test:integration
 ```
 
+Benchmarks for the performance budgets (results in `docs/benchmarks.md`):
+
+```bash
+pnpm bench
+```
+
 ```bash
 pnpm package
 ```

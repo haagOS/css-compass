@@ -6,8 +6,10 @@ export interface LinePosition {
 /** Converts UTF-16 offsets to zero-based line/character, treating CRLF, LF and CR as line ends. */
 export class LineIndex {
   private readonly starts: number[] = [0];
+  private readonly text: string;
 
-  constructor(private readonly text: string) {
+  constructor(text: string) {
+    this.text = text;
     for (let i = 0; i < text.length; i++) {
       const c = text.charCodeAt(i);
       if (c === 10) this.starts.push(i + 1);

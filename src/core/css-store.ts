@@ -32,7 +32,11 @@ export class CssStore {
   /** Bumped by every update/remove, so a slower reload can tell it is outdated. */
   private readonly generations = new Map<string, number>();
 
-  constructor(private readonly loader: FileLoader) {}
+  private readonly loader: FileLoader;
+
+  constructor(loader: FileLoader) {
+    this.loader = loader;
+  }
 
   /** The cached file, without touching the disk. */
   get(file: string): CssFile | undefined {
