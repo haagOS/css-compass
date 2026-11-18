@@ -64,7 +64,7 @@ export class SourceStore implements vscode.Disposable {
 
   /** Resolves the entries, loads every file and starts watching. */
   async build(onPackageChange: () => void): Promise<void> {
-    const loads: Promise<unknown>[] = [];
+    const loads: PromiseLike<unknown>[] = [];
     for (const entry of sourceEntries(this.folder)) {
       const source = resolveSource(entry, this.folder.uri.fsPath);
       if (source.kind === "package") {
@@ -87,11 +87,14 @@ export class SourceStore implements vscode.Disposable {
         manifest.onDidCreate(onPackageChange);
       }
       const pattern = new vscode.RelativePattern(this.folder, source.pattern);
-      const exclude = source.includesNodeModules ? null : "**/node_modules/**";
-      for (const uri of await vscode.workspace.findFiles(pattern, exclude)) {
-        loads.push(this.store.load(fileKey(uri.fsPath)));
-      }
       this.watch(pattern);
+      // A file search costs 100–300 ms in VS Code: plain paths skip it, globs run in parallel.
+      const files = source.literal
+        ? Promise.resolve([fileKey(path.resolve(this.folder.uri.fsPath, source.pattern))])
+        : vscode.workspace
+            .findFiles(pattern, source.includesNodeModules ? null : "**/node_modules/**")
+            .then((uris) => uris.map((uri) => fileKey(uri.fsPath)));
+      loads.push(files.then((list) => Promise.all(list.map((file) => this.store.load(file)))));
     }
     await Promise.all(loads);
   }

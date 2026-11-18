@@ -9,6 +9,8 @@ export type ResolvedSource =
       readonly pattern: string;
       /** The glob reaches into node_modules, so it must not exclude it. */
       readonly includesNodeModules: boolean;
+      /** No glob characters: a plain path, which needs no file search. */
+      readonly literal: boolean;
     }
   | {
       readonly kind: "package";
@@ -34,7 +36,12 @@ export function resolveSource(entry: string, folder: string): ResolvedSource {
     if (resolved) return { kind: "package", specifier: spec, ...resolved };
   }
   const pattern = spec.replace(/^\.\//, "");
-  return { kind: "glob", pattern, includesNodeModules: /(^|\/)node_modules(\/|$)/.test(pattern) };
+  return {
+    kind: "glob",
+    pattern,
+    includesNodeModules: /(^|\/)node_modules(\/|$)/.test(pattern),
+    literal: !GLOB_CHARS.test(pattern),
+  };
 }
 
 /** `@scope/name/sub/path` → [`@scope/name`, `./sub/path`]; `name` → [`name`, `.`]. */

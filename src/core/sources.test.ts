@@ -96,16 +96,20 @@ describe("resolveSource", () => {
       kind: "glob",
       pattern: "src/**/*.css",
       includesNodeModules: false,
+      literal: false,
     });
     expect(resolveSource("./src/index.css", root)).toMatchObject({ pattern: "src/index.css" });
     expect(resolveSource("src/index.css", root)).toMatchObject({
       kind: "glob",
       pattern: "src/index.css",
+      literal: true,
     });
     expect(resolveSource("node_modules/@acme/ds/lib/style.css", root)).toMatchObject({
       kind: "glob",
       includesNodeModules: true,
+      literal: true,
     });
+    expect(resolveSource("src/{a,b}.css", root)).toMatchObject({ literal: false });
     expect(resolveSource("node_modules\\x\\a.css", root)).toMatchObject({
       pattern: "node_modules/x/a.css",
     });
