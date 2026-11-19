@@ -20,6 +20,17 @@ const hex = (c: vscode.Color) =>
     )
     .join("");
 
+/** The colour range covers the function name; this is the whole usage it starts. */
+function usageAt(doc: vscode.TextDocument, c: vscode.ColorInformation): string {
+  const rest = doc.lineAt(c.range.start.line).text.slice(c.range.start.character);
+  let depth = 0;
+  for (let i = 0; i < rest.length; i++) {
+    if (rest[i] === "(") depth++;
+    else if (rest[i] === ")" && --depth === 0) return rest.slice(0, i + 1);
+  }
+  return rest;
+}
+
 suite("colour swatches", () => {
   let api: TestApi;
 
@@ -30,7 +41,7 @@ suite("colour swatches", () => {
   test("var() in CSS, including rgba(var(--x-rgb), alpha); composite values get none", async () => {
     const doc = await vscode.workspace.openTextDocument(fixture("use-tokens.module.css"));
     const found = (await colorsOf(doc.uri)).map(
-      (c) => `${doc.getText(c.range)} #${hex(c.color)} ${c.color.alpha}`,
+      (c) => `${usageAt(doc, c)} #${hex(c.color)} ${c.color.alpha}`,
     );
     assert.ok(found.includes("var(--ds-accent) #1f4e8c 1"), found.join(" | "));
     assert.ok(found.includes("rgba(var(--ds-blue-0-rgb), 0.25) #1f4e8c 0.25"), found.join(" | "));
@@ -39,9 +50,7 @@ suite("colour swatches", () => {
 
   test("var() in TS strings, not in comments", async () => {
     const doc = await vscode.workspace.openTextDocument(fixture("style-props.tsx"));
-    const ranges = (await colorsOf(doc.uri)).map(
-      (c) => `${c.range.start.line}:${doc.getText(c.range)}`,
-    );
+    const ranges = (await colorsOf(doc.uri)).map((c) => `${c.range.start.line}:${usageAt(doc, c)}`);
     assert.ok(ranges.includes("0:var(--ds-accent)"), ranges.join(" | "));
     assert.ok(!ranges.some((r) => r.startsWith("4:")), ranges.join(" | "));
   });
@@ -56,6 +65,7 @@ suite("colour swatches", () => {
       { uri: doc.uri, range: first.range },
     );
     assert.ok(presentations.some((p) => p.label === doc.getText(first.range)));
+    assert.equal(doc.getText(first.range), "var", "the picker must not cover the token");
   });
 
   test("a document without var( does not build the index", async () => {

@@ -8,7 +8,9 @@ import { timed } from "./timing.ts";
 
 /**
  * Swatches next to `var(--x)` (and `rgba(var(--x-rgb), .25)`) whose value resolves to a colour
- * (R-COL-1). Read-only: picking a colour keeps the original text.
+ * (R-COL-1). Read-only: picking a colour keeps the original text. The colour range covers only
+ * the function name (`var`, `rgba`): VS Code opens its picker on hover over the whole range,
+ * which would push the token's own hover aside.
  */
 export class PropertyColorProvider implements vscode.DocumentColorProvider {
   private readonly properties: Properties;
@@ -36,7 +38,7 @@ export class PropertyColorProvider implements vscode.DocumentColorProvider {
         if (!color) continue;
         const range = new vscode.Range(
           document.positionAt(usage.start),
-          document.positionAt(usage.end),
+          document.positionAt(usage.start + usage.expression.indexOf("(")),
         );
         colors.push(
           new vscode.ColorInformation(range, new vscode.Color(color.r, color.g, color.b, color.a)),
