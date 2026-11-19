@@ -195,7 +195,8 @@ cached until the folder's index changes.
   a colour (DocumentColorProvider, read-only: the picker doesn't rewrite the token). A colour
   function with `var()` arguments gets one too: `rgba(var(--x-rgb), 0.25)`. An RGB triplet
   token (`--x-rgb: 31, 78, 140`) is not a colour by itself. In TS/JS only usages inside
-  strings count. Documents without `var(` return before the index is touched.
+  strings count. The colour range covers only the function name (`var`, `rgba`), so hovering the
+  token shows its definitions, not VS Code's colour picker. Documents without `var(` return before the index is touched.
 - Recognised colours: hex (3/4/6/8 digits), `rgb()`/`rgba()`/`hsl()`/`hsla()` (comma and
   space syntax), named colours, `transparent`. Not: `oklch()`, `lab()`, `color-mix()`.
 
