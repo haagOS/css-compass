@@ -69,7 +69,7 @@ export async function waitForTypeScript(): Promise<void> {
 
 /** Opening a document starts activation without waiting for it; tests need it done. */
 export async function activateExtension(): Promise<TestApi> {
-  const extension = vscode.extensions.getExtension<TestApi>("local.css-compass");
+  const extension = vscode.extensions.getExtension<TestApi>("haagos.css-compass");
   assert.ok(extension, "extension under test not found");
   return extension.activate();
 }
