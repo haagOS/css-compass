@@ -1,0 +1,27 @@
+.card {
+  display: grid;
+  gap: var(--ds-space-3);
+  padding: var(--ds-space-4);
+  border-radius: var(--ds-radius-m);
+  background: var(--ds-surface);
+  color: var(--ds-text);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+}
+
+.avatar {
+  inline-size: 3rem;
+  border-radius: 50%;
+}
+
+.name {
+  font-weight: 600;
+}
+
+.is-online {
+  outline: 2px solid var(--ds-success);
+}

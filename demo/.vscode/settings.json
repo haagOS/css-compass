@@ -1,0 +1,3 @@
+{
+  "cssCompass.sources": ["src/**/*.css", "@acme/design-system/style.css"]
+}

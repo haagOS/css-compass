@@ -1,0 +1,70 @@
+/* A made-up design system: tokens, two themes and utility classes. */
+
+@layer ds.base {
+  :root {
+    --ds-blue-3: #4d8fe0;
+    --ds-blue-5: #1f5fb8;
+    --ds-green-4: #2e9e5b;
+    --ds-grey-1: #f4f5f7;
+    --ds-grey-3: #d0d4db;
+    --ds-grey-6: #6b7280;
+    --ds-grey-9: #1c1f26;
+    --ds-white: #ffffff;
+
+    --ds-space-1: 0.25rem;
+    --ds-space-2: 0.5rem;
+    --ds-space-3: 0.75rem;
+    --ds-space-4: 1rem;
+    --ds-radius-m: 0.5rem;
+  }
+
+  :root,
+  .ds-theme-light {
+    --ds-surface: var(--ds-white);
+    --ds-text: var(--ds-grey-9);
+    --ds-text-muted: var(--ds-grey-6);
+    --ds-accent: var(--ds-blue-5);
+    --ds-success: var(--ds-green-4);
+  }
+
+  .ds-theme-dark {
+    --ds-surface: var(--ds-grey-9);
+    --ds-text: var(--ds-grey-1);
+    --ds-text-muted: var(--ds-grey-3);
+    --ds-accent: var(--ds-blue-3);
+    --ds-success: var(--ds-green-4);
+  }
+}
+
+@layer ds.utilities {
+  .text-sm {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+
+  .text-lg {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+  }
+
+  .text-muted {
+    color: var(--ds-text-muted);
+  }
+
+  .truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ds-space-2);
+  }
+
+  .visually-hidden {
+    position: absolute;
+    clip: rect(0 0 0 0);
+  }
+}

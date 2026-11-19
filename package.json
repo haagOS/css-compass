@@ -1,7 +1,6 @@
 {
   "name": "css-compass",
   "displayName": "CSS Compass",
-  "icon": "icon.png",
   "version": "0.1.0",
   "private": true,
   "description": "Go to definition, hover and completion for CSS Modules, global classes and custom properties.",
@@ -26,7 +25,8 @@
     "check:size": "node scripts/check-size.ts",
     "package": "pnpm build && pnpm check:size && vsce package --no-dependencies",
     "test:integration": "pnpm build && node scripts/build-tests.ts && vscode-test",
-    "bench": "node scripts/bench.ts"
+    "bench": "node scripts/bench.ts",
+    "record-demos": "pnpm build && node scripts/record-demos.ts"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",
@@ -38,6 +38,7 @@
     "esbuild": "^0.28.2",
     "oxfmt": "^0.79.0",
     "oxlint": "^1.94.0",
+    "playwright-core": "1.55.0",
     "typescript": "^6.0.3",
     "vitest": "^5.1.1"
   },
@@ -121,6 +122,7 @@
     "onLanguage:typescript",
     "onLanguage:typescriptreact"
   ],
+  "icon": "icon.png",
   "engines": {
     "node": ">=22.18",
     "vscode": "^1.100.0"
